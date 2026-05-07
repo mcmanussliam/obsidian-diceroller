@@ -1,0 +1,10 @@
+{
+  "id": "obsidian-diceroller",
+  "name": "3D Dice Roller",
+  "version": "1.0.0",
+  "minAppVersion": "1.0.0",
+  "description": "Roll realistic 3D dice directly over your notes with physics simulation.",
+  "author": "liam",
+  "authorUrl": "",
+  "isDesktopOnly": true
+}
