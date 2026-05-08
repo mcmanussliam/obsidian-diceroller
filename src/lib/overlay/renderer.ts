@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { DiceRollerSettings } from '../settings/plugin-settings';
+import type { DiceRollerSettings } from '@/lib/settings/plugin-settings';
 
 enum Magics {
   CAMERA_FOV = 45,

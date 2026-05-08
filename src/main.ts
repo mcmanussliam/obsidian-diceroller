@@ -1,12 +1,12 @@
 import { Plugin } from 'obsidian';
-import './styles/styles.css';
+import '@/styles/styles.css';
 import {
   DEFAULT_SETTINGS,
   DiceRollerSettingTab,
   type DiceRollerSettings,
-} from './lib/settings/plugin-settings';
-import { registerCommands } from './lib/register-commands';
-import { DiceOverlay } from './lib/overlay/dice-overlay';
+} from '@/lib/settings/plugin-settings';
+import { registerCommands } from '@/lib/register-commands';
+import { DiceOverlay } from '@/lib/overlay/dice-overlay';
 
 export default class DiceRollerPlugin extends Plugin {
   public settings!: DiceRollerSettings;

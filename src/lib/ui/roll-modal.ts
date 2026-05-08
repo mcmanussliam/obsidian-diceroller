@@ -1,5 +1,5 @@
 import { type App, Modal, Setting } from 'obsidian';
-import { validateNotation } from '../parser/dice-parser';
+import { validateNotation } from '@/lib/parser/dice-parser';
 
 const QUICK_PICKS = ['1d4', '1d6', '1d8', '1d10', '1d12', '1d20', '1d100'] as const;
 const FOCUS_DELAY_MS = 50;

@@ -1,9 +1,9 @@
 import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
-import { clampSides, type DieSides } from '../parser/dice-parser';
-import { isDark } from '../../utils/color';
-import { geomToConvex } from '../../utils/three-utils';
-import { DecagonGeometry } from '../geometry/decagon-geometry';
+import { clampSides, type DieSides } from '@/lib/parser/dice-parser';
+import { isDark } from '@/utils/color';
+import { geomToConvex } from '@/utils/three-utils';
+import { DecagonGeometry } from '@/lib/geometry/decagon-geometry';
 
 enum Magics {
   // Die geometry, shared radius for all non-cube shapes

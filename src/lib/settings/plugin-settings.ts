@@ -1,5 +1,5 @@
 import { type App, PluginSettingTab, Setting } from 'obsidian';
-import type DiceRollerPlugin from '../main';
+import type DiceRollerPlugin from '@/main';
 
 export interface DiceRollerSettings {
   /** Maximum seconds before dice are force-settled regardless of motion. */

@@ -1,11 +1,11 @@
 import type { App } from 'obsidian';
-import type { DiceRollerSettings } from '../settings/plugin-settings';
-import { clampSides, extractGroups, parseAndRoll } from '../parser/dice-parser';
-import { ResultDisplay } from '../ui/result-display';
-import { AnimationController } from './animation-controller';
-import { DiceFactory, type DieObject } from './dice-factory';
-import { PhysicsWorld } from './physics-world';
-import { Renderer } from './renderer';
+import type { DiceRollerSettings } from '@/lib/settings/plugin-settings';
+import { clampSides, extractGroups, parseAndRoll } from '@/lib/parser/dice-parser';
+import { ResultDisplay } from '@/lib/ui/result-display';
+import { AnimationController } from '@/lib/overlay/animation-controller';
+import { DiceFactory, type DieObject } from '@/lib/overlay/dice-factory';
+import { PhysicsWorld } from '@/lib/overlay/physics-world';
+import { Renderer } from '@/lib/overlay/renderer';
 
 enum Magics {
   // Overlay fade animation

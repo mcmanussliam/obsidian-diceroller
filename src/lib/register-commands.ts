@@ -1,6 +1,6 @@
 import type { App } from 'obsidian';
-import type DiceRollerPlugin from '../main';
-import { RollModal } from './ui/roll-modal';
+import type DiceRollerPlugin from '@/main';
+import { RollModal } from '@/lib/ui/roll-modal';
 
 export function registerCommands(plugin: DiceRollerPlugin, app: App): void {
   plugin.addCommand({
