@@ -53,32 +53,32 @@ const DIE_COLORS: Record<DieSides, number> = {
 };
 
 export class DiceFactory {
-  private readonly physicsMaterial: CANNON.Material;
+  readonly #physicsMaterial: CANNON.Material;
 
-  private readonly physicsGeoCache = new Map<DieSides, THREE.BufferGeometry>();
+  readonly #physicsGeoCache = new Map<DieSides, THREE.BufferGeometry>();
 
   public constructor(physicsMaterial: CANNON.Material) {
-    this.physicsMaterial = physicsMaterial;
+    this.#physicsMaterial = physicsMaterial;
   }
 
   public createDie(sides: DieSides, intensity: number): DieObject {
     const s = clampSides(sides);
-    const physicsGeo = this.getPhysicsGeo(s);
-    const mesh = this.buildMesh(s, physicsGeo);
-    const body = this.buildBody(s, physicsGeo, intensity);
+    const physicsGeo = this.#getPhysicsGeo(s);
+    const mesh = this.#buildMesh(s, physicsGeo);
+    const body = this.#buildBody(physicsGeo, intensity);
 
     return { mesh, body, sides: s };
   }
 
   public dispose(): void {
-    for (const geo of this.physicsGeoCache.values()) {
+    for (const geo of this.#physicsGeoCache.values()) {
       geo.dispose();
     }
 
-    this.physicsGeoCache.clear();
+    this.#physicsGeoCache.clear();
   }
 
-  private buildMesh(sides: DieSides, physicsGeo: THREE.BufferGeometry): THREE.Mesh {
+  #buildMesh(sides: DieSides, physicsGeo: THREE.BufferGeometry): THREE.Mesh {
     const color = DIE_COLORS[sides];
     const dark = isDark(color);
     const edgeColor = dark ? 0xffffff : 0x000000;
@@ -108,14 +108,10 @@ export class DiceFactory {
     return mesh;
   }
 
-  private buildBody(
-    sides: DieSides,
-    physicsGeo: THREE.BufferGeometry,
-    intensity: number
-  ): CANNON.Body {
+  #buildBody(physicsGeo: THREE.BufferGeometry, intensity: number): CANNON.Body {
     const body = new CANNON.Body({
       mass: 1,
-      material: this.physicsMaterial,
+      material: this.#physicsMaterial,
       linearDamping: Magics.LINEAR_DAMPING,
       angularDamping: Magics.ANGULAR_DAMPING,
     });
@@ -149,14 +145,14 @@ export class DiceFactory {
     return body;
   }
 
-  private getPhysicsGeo(sides: DieSides): THREE.BufferGeometry {
-    const cached = this.physicsGeoCache.get(sides);
+  #getPhysicsGeo(sides: DieSides): THREE.BufferGeometry {
+    const cached = this.#physicsGeoCache.get(sides);
     if (cached) {
       return cached;
     }
 
     const geo = buildGeometry(sides);
-    this.physicsGeoCache.set(sides, geo);
+    this.#physicsGeoCache.set(sides, geo);
     return geo;
   }
 }

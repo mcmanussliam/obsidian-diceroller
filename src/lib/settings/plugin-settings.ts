@@ -33,12 +33,12 @@ export const DEFAULT_SETTINGS: DiceRollerSettings = {
 export class DiceRollerSettingTab extends PluginSettingTab {
   readonly plugin: DiceRollerPlugin;
 
-  constructor(app: App, plugin: DiceRollerPlugin) {
+  public constructor(app: App, plugin: DiceRollerPlugin) {
     super(app, plugin);
     this.plugin = plugin;
   }
 
-  display(): void {
+  public display(): void {
     const { containerEl } = this;
     containerEl.empty();
 

@@ -12,59 +12,59 @@ export interface RollResult {
 }
 
 export class ResultDisplay {
-  private readonly el: HTMLElement;
+  readonly #el: HTMLElement;
 
-  private fadeOutTimer: ReturnType<typeof setTimeout> | null = null;
+  #fadeOutTimer: ReturnType<typeof setTimeout> | null = null;
 
-  private removeTimer: ReturnType<typeof setTimeout> | null = null;
+  #removeTimer: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(container: HTMLElement) {
-    this.el = container.createDiv({ cls: 'dice-result-display' });
+  public constructor(container: HTMLElement) {
+    this.#el = container.createDiv({ cls: 'dice-result-display' });
   }
 
-  show(result: RollResult, displayDurationSeconds: number): void {
-    this.clearTimers();
+  public show(result: RollResult, displayDurationSeconds: number): void {
+    this.#clearTimers();
 
-    this.el.empty();
-    this.el.createEl('div', {
+    this.#el.empty();
+    this.#el.createEl('div', {
       cls: 'dice-result-display__total',
       text: String(result.total),
     });
-    this.el.createEl('div', {
+    this.#el.createEl('div', {
       cls: 'dice-result-display__breakdown',
       text: result.output,
     });
 
-    this.el.removeClass('dice-result-display--hidden');
-    this.el.addClass('dice-result-display--visible');
+    this.#el.removeClass('dice-result-display--hidden');
+    this.#el.addClass('dice-result-display--visible');
 
     const displayMs = displayDurationSeconds * 1000;
 
-    this.fadeOutTimer = setTimeout(() => {
-      this.el.removeClass('dice-result-display--visible');
-      this.el.addClass('dice-result-display--fading');
+    this.#fadeOutTimer = setTimeout(() => {
+      this.#el.removeClass('dice-result-display--visible');
+      this.#el.addClass('dice-result-display--fading');
 
-      this.removeTimer = setTimeout(() => {
-        this.el.addClass('dice-result-display--hidden');
-        this.el.removeClass('dice-result-display--fading');
+      this.#removeTimer = setTimeout(() => {
+        this.#el.addClass('dice-result-display--hidden');
+        this.#el.removeClass('dice-result-display--fading');
       }, RESULT_FADE_MS);
     }, displayMs);
   }
 
-  dispose(): void {
-    this.clearTimers();
-    this.el.remove();
+  public dispose(): void {
+    this.#clearTimers();
+    this.#el.remove();
   }
 
-  private clearTimers(): void {
-    if (this.fadeOutTimer !== null) {
-      clearTimeout(this.fadeOutTimer);
-      this.fadeOutTimer = null;
+  #clearTimers(): void {
+    if (this.#fadeOutTimer !== null) {
+      clearTimeout(this.#fadeOutTimer);
+      this.#fadeOutTimer = null;
     }
 
-    if (this.removeTimer !== null) {
-      clearTimeout(this.removeTimer);
-      this.removeTimer = null;
+    if (this.#removeTimer !== null) {
+      clearTimeout(this.#removeTimer);
+      this.#removeTimer = null;
     }
   }
 }

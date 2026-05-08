@@ -5,18 +5,18 @@ const QUICK_PICKS = ['1d4', '1d6', '1d8', '1d10', '1d12', '1d20', '1d100'] as co
 const FOCUS_DELAY_MS = 50;
 
 export class RollModal extends Modal {
-  private notation = '';
+  #notation = '';
 
-  private readonly onRoll: (notation: string) => void;
+  readonly #onRoll: (notation: string) => void;
 
-  private errorEl: HTMLElement | null = null;
+  #errorEl: HTMLElement | null = null;
 
-  constructor(app: App, onRoll: (notation: string) => void) {
+  public constructor(app: App, onRoll: (notation: string) => void) {
     super(app);
-    this.onRoll = onRoll;
+    this.#onRoll = onRoll;
   }
 
-  onOpen(): void {
+  public onOpen(): void {
     const { contentEl } = this;
     contentEl.addClass('dice-roller-modal');
 
@@ -29,20 +29,20 @@ export class RollModal extends Modal {
     new Setting(contentEl).setName('Notation').addText((text) => {
       text
         .setPlaceholder('e.g. 2d6+3')
-        .setValue(this.notation)
+        .setValue(this.#notation)
         .onChange((value) => {
-          this.notation = value.trim();
-          this.clearError();
+          this.#notation = value.trim();
+          this.#clearError();
         });
 
       text.inputEl.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') this.submit();
+        if (e.key === 'Enter') this.#submit();
       });
 
       setTimeout(() => text.inputEl.focus(), FOCUS_DELAY_MS);
     });
 
-    this.errorEl = contentEl.createEl('p', {
+    this.#errorEl = contentEl.createEl('p', {
       cls: 'dice-roller-modal__error',
       text: '',
     });
@@ -51,7 +51,7 @@ export class RollModal extends Modal {
       btn
         .setButtonText('Roll')
         .setCta()
-        .onClick(() => this.submit())
+        .onClick(() => this.#submit())
     );
 
     const quickPick = contentEl.createDiv({ cls: 'dice-roller-modal__quickpick' });
@@ -61,36 +61,36 @@ export class RollModal extends Modal {
       quickPick
         .createEl('button', { text: pick, cls: 'dice-roller-modal__chip' })
         .addEventListener('click', () => {
-          this.notation = pick;
-          this.submit();
+          this.#notation = pick;
+          this.#submit();
         });
     }
   }
 
-  private submit(): void {
-    if (!this.notation) {
-      this.showError('Please enter a dice notation.');
+  public onClose(): void {
+    this.contentEl.empty();
+  }
+
+  #submit(): void {
+    if (!this.#notation) {
+      this.#showError('Please enter a dice notation.');
       return;
     }
 
-    if (!validateNotation(this.notation)) {
-      this.showError(`"${this.notation}" is not valid dice notation.`);
+    if (!validateNotation(this.#notation)) {
+      this.#showError(`"${this.#notation}" is not valid dice notation.`);
       return;
     }
 
     this.close();
-    this.onRoll(this.notation);
+    this.#onRoll(this.#notation);
   }
 
-  private showError(msg: string): void {
-    this.errorEl?.setText(msg);
+  #showError(msg: string): void {
+    this.#errorEl?.setText(msg);
   }
 
-  private clearError(): void {
-    this.errorEl?.setText('');
-  }
-
-  onClose(): void {
-    this.contentEl.empty();
+  #clearError(): void {
+    this.#errorEl?.setText('');
   }
 }

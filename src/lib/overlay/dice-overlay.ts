@@ -16,29 +16,33 @@ enum Magics {
 }
 
 export class DiceOverlay {
-  private overlayEl: HTMLElement | null = null;
+  readonly #app: App;
 
-  private renderer: Renderer | null = null;
+  readonly #settings: DiceRollerSettings;
 
-  private physics: PhysicsWorld | null = null;
+  #overlayEl: HTMLElement | null = null;
 
-  private factory: DiceFactory | null = null;
+  #renderer: Renderer | null = null;
 
-  private animation: AnimationController | null = null;
+  #physics: PhysicsWorld | null = null;
 
-  private resultDisplay: ResultDisplay | null = null;
+  #factory: DiceFactory | null = null;
 
-  private dice: DieObject[] = [];
+  #animation: AnimationController | null = null;
 
-  private active = false;
+  #resultDisplay: ResultDisplay | null = null;
 
-  constructor(
-    private readonly app: App,
-    private readonly settings: DiceRollerSettings
-  ) {}
+  #dice: DieObject[] = [];
 
-  roll(notation: string): void {
-    if (this.active) this.destroy();
+  #active = false;
+
+  public constructor(app: App, settings: DiceRollerSettings) {
+    this.#app = app;
+    this.#settings = settings;
+  }
+
+  public roll(notation: string): void {
+    if (this.#active) this.destroy();
 
     const result = parseAndRoll(notation);
     const groups = extractGroups(notation);
@@ -46,108 +50,108 @@ export class DiceOverlay {
       return;
     }
 
-    this.build();
-    this.spawnDice(groups);
-    this.fadeIn();
+    this.#build();
+    this.#spawnDice(groups);
+    this.#fadeIn();
 
-    this.animation?.start(() => {
-      this.onSettled(result.total, result.output, notation);
+    this.#animation?.start(() => {
+      this.#onSettled(result.total, result.output, notation);
     });
   }
 
-  destroy(): void {
-    this.animation?.stop();
-    this.animation = null;
-    this.resultDisplay?.dispose();
-    this.resultDisplay = null;
+  public destroy(): void {
+    this.#animation?.stop();
+    this.#animation = null;
+    this.#resultDisplay?.dispose();
+    this.#resultDisplay = null;
 
-    for (const die of this.dice) {
-      this.physics?.removeBody(die.body);
+    for (const die of this.#dice) {
+      this.#physics?.removeBody(die.body);
     }
-    this.dice = [];
+    this.#dice = [];
 
-    this.renderer?.dispose();
-    this.renderer = null;
-    this.physics?.dispose();
-    this.physics = null;
-    this.factory?.dispose();
-    this.factory = null;
+    this.#renderer?.dispose();
+    this.#renderer = null;
+    this.#physics?.dispose();
+    this.#physics = null;
+    this.#factory?.dispose();
+    this.#factory = null;
 
-    this.overlayEl?.remove();
-    this.overlayEl = null;
+    this.#overlayEl?.remove();
+    this.#overlayEl = null;
 
-    this.active = false;
+    this.#active = false;
   }
 
-  private build(): void {
-    this.overlayEl = document.body.createDiv({ cls: 'dice-overlay dice-overlay--hidden' });
-    this.renderer = new Renderer(this.overlayEl, this.settings.shadowQuality);
-    this.physics = new PhysicsWorld();
-    this.factory = new DiceFactory(this.physics.dicePhysicsMaterial);
-    this.resultDisplay = new ResultDisplay(this.overlayEl);
-    this.active = true;
+  #build(): void {
+    this.#overlayEl = document.body.createDiv({ cls: 'dice-overlay dice-overlay--hidden' });
+    this.#renderer = new Renderer(this.#overlayEl, this.#settings.shadowQuality);
+    this.#physics = new PhysicsWorld();
+    this.#factory = new DiceFactory(this.#physics.dicePhysicsMaterial);
+    this.#resultDisplay = new ResultDisplay(this.#overlayEl);
+    this.#active = true;
   }
 
-  private spawnDice(groups: ReturnType<typeof extractGroups>): void {
-    if (!this.factory || !this.physics || !this.renderer) {
+  #spawnDice(groups: ReturnType<typeof extractGroups>): void {
+    if (!this.#factory || !this.#physics || !this.#renderer) {
       return;
     }
 
     for (const group of groups) {
       const sides = clampSides(group.sides);
       for (let i = 0; i < group.count; i++) {
-        const die = this.factory.createDie(sides, this.settings.physicsIntensity);
-        this.physics.addBody(die.body);
-        this.renderer.scene.add(die.mesh);
-        this.dice.push(die);
+        const die = this.#factory.createDie(sides, this.#settings.physicsIntensity);
+        this.#physics.addBody(die.body);
+        this.#renderer.scene.add(die.mesh);
+        this.#dice.push(die);
       }
     }
 
-    this.animation = new AnimationController(
-      this.physics,
-      this.renderer,
-      this.dice,
-      this.settings.animationDuration
+    this.#animation = new AnimationController(
+      this.#physics,
+      this.#renderer,
+      this.#dice,
+      this.#settings.animationDuration
     );
   }
 
-  private onSettled(total: number, output: string, notation: string): void {
-    this.resultDisplay?.show({ notation, total, output }, this.settings.resultDisplayDuration);
+  #onSettled(total: number, output: string, notation: string): void {
+    this.#resultDisplay?.show({ notation, total, output }, this.#settings.resultDisplayDuration);
 
-    if (this.settings.autoInsertResult) {
-      this.insertResult(output);
+    if (this.#settings.autoInsertResult) {
+      this.#insertResult(output);
     }
 
     const teardownMs =
-      (this.settings.resultDisplayDuration + Magics.TEARDOWN_EXTRA_S) * 1000 +
+      (this.#settings.resultDisplayDuration + Magics.TEARDOWN_EXTRA_S) * 1000 +
       Magics.FADE_DURATION_MS;
 
     setTimeout(() => {
-      this.fadeOut(() => this.destroy());
+      this.#fadeOut(() => this.destroy());
     }, teardownMs);
   }
 
-  private insertResult(output: string): void {
-    const editor = this.app.workspace.activeEditor?.editor;
+  #insertResult(output: string): void {
+    const editor = this.#app.workspace.activeEditor?.editor;
     if (!editor) return;
 
     const cursor = editor.getCursor();
     editor.replaceRange(`\n${output}`, cursor);
   }
 
-  private fadeIn(): void {
-    if (!this.overlayEl) return;
-    this.overlayEl.removeClass('dice-overlay--hidden');
-    this.overlayEl.addClass('dice-overlay--visible');
+  #fadeIn(): void {
+    if (!this.#overlayEl) return;
+    this.#overlayEl.removeClass('dice-overlay--hidden');
+    this.#overlayEl.addClass('dice-overlay--visible');
   }
 
-  private fadeOut(cb?: () => void): void {
-    if (!this.overlayEl) {
+  #fadeOut(cb?: () => void): void {
+    if (!this.#overlayEl) {
       cb?.();
       return;
     }
-    this.overlayEl.removeClass('dice-overlay--visible');
-    this.overlayEl.addClass('dice-overlay--fading');
+    this.#overlayEl.removeClass('dice-overlay--visible');
+    this.#overlayEl.addClass('dice-overlay--fading');
     setTimeout(() => cb?.(), Magics.FADE_DURATION_MS);
   }
 }

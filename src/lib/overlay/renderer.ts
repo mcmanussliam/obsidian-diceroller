@@ -42,7 +42,7 @@ export class Renderer {
 
   public readonly threeRenderer: THREE.WebGLRenderer;
 
-  private readonly onResize: () => void;
+  readonly #onResize: () => void;
 
   public constructor(container: HTMLElement, shadowQuality: DiceRollerSettings['shadowQuality']) {
     this.scene = new THREE.Scene();
@@ -71,16 +71,16 @@ export class Renderer {
 
     container.appendChild(this.threeRenderer.domElement);
 
-    this.setupLights(shadowQuality);
-    this.setupShadowPlane();
+    this.#setupLights(shadowQuality);
+    this.#setupShadowPlane();
 
-    this.onResize = () => {
+    this.#onResize = () => {
       this.camera.aspect = window.innerWidth / window.innerHeight;
       this.camera.updateProjectionMatrix();
       this.threeRenderer.setSize(window.innerWidth, window.innerHeight);
     };
 
-    window.addEventListener('resize', this.onResize);
+    window.addEventListener('resize', this.#onResize);
   }
 
   public render(): void {
@@ -88,7 +88,7 @@ export class Renderer {
   }
 
   public dispose(): void {
-    window.removeEventListener('resize', this.onResize);
+    window.removeEventListener('resize', this.#onResize);
     this.threeRenderer.dispose();
 
     this.scene.traverse((obj) => {
@@ -106,7 +106,7 @@ export class Renderer {
     });
   }
 
-  private setupLights(shadowQuality: DiceRollerSettings['shadowQuality']): void {
+  #setupLights(shadowQuality: DiceRollerSettings['shadowQuality']): void {
     this.scene.add(new THREE.AmbientLight(0xffffff, Magics.AMBIENT_INTENSITY));
 
     const mapSize = SHADOW_MAP_SIZES[shadowQuality];
@@ -138,7 +138,7 @@ export class Renderer {
   }
 
   /** Transparent plane that only receives shadows, giving dice soft ground shadows. */
-  private setupShadowPlane(): void {
+  #setupShadowPlane(): void {
     const geo = new THREE.PlaneGeometry(Magics.SHADOW_PLANE_SIZE, Magics.SHADOW_PLANE_SIZE);
     const mat = new THREE.ShadowMaterial({ opacity: Magics.SHADOW_PLANE_OPACITY });
     const plane = new THREE.Mesh(geo, mat);

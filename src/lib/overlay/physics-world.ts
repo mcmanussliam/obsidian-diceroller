@@ -25,9 +25,9 @@ enum Magics {
 export class PhysicsWorld {
   readonly world: CANNON.World;
 
-  private readonly groundMaterial: CANNON.Material;
+  readonly #groundMaterial: CANNON.Material;
 
-  private readonly diceMaterial: CANNON.Material;
+  readonly #diceMaterial: CANNON.Material;
 
   public constructor() {
     this.world = new CANNON.World({
@@ -38,56 +38,56 @@ export class PhysicsWorld {
     (this.world.solver as CANNON.GSSolver).iterations = Magics.SOLVER_ITERATIONS;
     this.world.allowSleep = true;
 
-    this.groundMaterial = new CANNON.Material('ground');
-    this.diceMaterial = new CANNON.Material('dice');
+    this.#groundMaterial = new CANNON.Material('ground');
+    this.#diceMaterial = new CANNON.Material('dice');
 
     this.world.addContactMaterial(
-      new CANNON.ContactMaterial(this.groundMaterial, this.diceMaterial, {
+      new CANNON.ContactMaterial(this.#groundMaterial, this.#diceMaterial, {
         friction: Magics.GROUND_FRICTION,
         restitution: Magics.GROUND_RESTITUTION,
       })
     );
 
     this.world.addContactMaterial(
-      new CANNON.ContactMaterial(this.diceMaterial, this.diceMaterial, {
+      new CANNON.ContactMaterial(this.#diceMaterial, this.#diceMaterial, {
         friction: Magics.DICE_FRICTION,
         restitution: Magics.DICE_RESTITUTION,
       })
     );
 
-    this.addGround();
-    this.addWalls();
+    this.#addGround();
+    this.#addWalls();
   }
 
-  get dicePhysicsMaterial(): CANNON.Material {
-    return this.diceMaterial;
+  public get dicePhysicsMaterial(): CANNON.Material {
+    return this.#diceMaterial;
   }
 
-  step(fixedStep: number, deltaTime: number): void {
+  public step(fixedStep: number, deltaTime: number): void {
     this.world.step(fixedStep, deltaTime, Magics.SOLVER_SUBSTEPS);
   }
 
-  addBody(body: CANNON.Body): void {
+  public addBody(body: CANNON.Body): void {
     this.world.addBody(body);
   }
 
-  removeBody(body: CANNON.Body): void {
+  public removeBody(body: CANNON.Body): void {
     this.world.removeBody(body);
   }
 
-  dispose(): void {
+  public dispose(): void {
     // cannon-es has no formal dispose; dropping the reference is sufficient.
   }
 
-  private addGround(): void {
-    const ground = new CANNON.Body({ mass: 0, material: this.groundMaterial });
+  #addGround(): void {
+    const ground = new CANNON.Body({ mass: 0, material: this.#groundMaterial });
     ground.addShape(new CANNON.Plane());
     ground.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
     ground.position.set(0, 0, 0);
     this.world.addBody(ground);
   }
 
-  private addWalls(): void {
+  #addWalls(): void {
     const wallDefs: Array<{ pos: CANNON.Vec3; euler: [number, number, number] }> = [
       {
         pos: new CANNON.Vec3(-Magics.WALL_HALF_WIDTH, Magics.WALL_MID_HEIGHT, 0),
@@ -108,7 +108,7 @@ export class PhysicsWorld {
     ];
 
     for (const { pos, euler } of wallDefs) {
-      const wall = new CANNON.Body({ mass: 0, material: this.groundMaterial });
+      const wall = new CANNON.Body({ mass: 0, material: this.#groundMaterial });
       wall.addShape(new CANNON.Plane());
       wall.position.copy(pos);
       wall.quaternion.setFromEuler(...euler);

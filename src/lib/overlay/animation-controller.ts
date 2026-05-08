@@ -13,82 +13,95 @@ enum Magics {
 }
 
 export class AnimationController {
-  private rafHandle: number | null = null;
+  readonly #physics: PhysicsWorld;
 
-  private lastTime: number | null = null;
+  readonly #renderer: Renderer;
 
-  private settleAccum = 0;
+  readonly #dice: readonly DieObject[];
 
-  private settled = false;
+  readonly #maxDuration: number;
 
-  private forceSettleTimer = 0;
+  #rafHandle: number | null = null;
 
-  private onSettled: (() => void) | null = null;
+  #lastTime: number | null = null;
 
-  constructor(
-    private readonly physics: PhysicsWorld,
-    private readonly renderer: Renderer,
-    private readonly dice: readonly DieObject[],
-    private readonly maxDuration: number
-  ) {}
+  #settleAccum = 0;
 
-  start(onSettled: () => void): void {
-    this.onSettled = onSettled;
-    this.settled = false;
-    this.lastTime = null;
-    this.settleAccum = 0;
-    this.forceSettleTimer = 0;
-    this.rafHandle = requestAnimationFrame(this.tick);
+  #settled = false;
+
+  #forceSettleTimer = 0;
+
+  #onSettled: (() => void) | null = null;
+
+  public constructor(
+    physics: PhysicsWorld,
+    renderer: Renderer,
+    dice: readonly DieObject[],
+    maxDuration: number
+  ) {
+    this.#physics = physics;
+    this.#renderer = renderer;
+    this.#dice = dice;
+    this.#maxDuration = maxDuration;
   }
 
-  stop(): void {
-    if (this.rafHandle === null) {
+  public start(onSettled: () => void): void {
+    this.#onSettled = onSettled;
+    this.#settled = false;
+    this.#lastTime = null;
+    this.#settleAccum = 0;
+    this.#forceSettleTimer = 0;
+    this.#rafHandle = requestAnimationFrame(this.#tick);
+  }
+
+  public stop(): void {
+    if (this.#rafHandle === null) {
       return;
     }
 
-    cancelAnimationFrame(this.rafHandle);
-    this.rafHandle = null;
+    cancelAnimationFrame(this.#rafHandle);
+    this.#rafHandle = null;
   }
 
-  private tick = (now: number): void => {
-    if (this.lastTime === null) {
-      this.lastTime = now;
-      this.rafHandle = requestAnimationFrame(this.tick);
+  #tick = (now: number): void => {
+    if (this.#lastTime === null) {
+      this.#lastTime = now;
+      this.#rafHandle = requestAnimationFrame(this.#tick);
       return;
     }
 
-    const rawDelta = (now - this.lastTime) / 1000;
-    this.lastTime = now;
+    const rawDelta = (now - this.#lastTime) / 1000;
+    this.#lastTime = now;
     const delta = Math.min(rawDelta, Magics.DELTA_CAP);
 
-    this.physics.step(Magics.FIXED_STEP, delta);
-    this.syncMeshes();
-    this.renderer.render();
+    this.#physics.step(Magics.FIXED_STEP, delta);
+    this.#syncMeshes();
+    this.#renderer.render();
 
-    this.forceSettleTimer += delta;
+    this.#forceSettleTimer += delta;
 
-    if (!this.settled) {
-      if (this.allSlow()) {
-        this.settleAccum += delta;
-        if (this.settleAccum >= Magics.SETTLE_CONFIRM_TIME) {
-          this.declare();
+    if (!this.#settled) {
+      if (this.#allSlow()) {
+        this.#settleAccum += delta;
+        if (this.#settleAccum >= Magics.SETTLE_CONFIRM_TIME) {
+          this.#declare();
           return;
         }
       } else {
-        this.settleAccum = 0;
+        this.#settleAccum = 0;
       }
 
-      if (this.forceSettleTimer >= this.maxDuration) {
-        this.declare();
+      if (this.#forceSettleTimer >= this.#maxDuration) {
+        this.#declare();
         return;
       }
     }
 
-    this.rafHandle = requestAnimationFrame(this.tick);
+    this.#rafHandle = requestAnimationFrame(this.#tick);
   };
 
-  private syncMeshes(): void {
-    for (const { body, mesh } of this.dice) {
+  #syncMeshes(): void {
+    for (const { body, mesh } of this.#dice) {
       mesh.position.set(body.position.x, body.position.y, body.position.z);
       mesh.quaternion.set(
         body.quaternion.x,
@@ -99,17 +112,17 @@ export class AnimationController {
     }
   }
 
-  private allSlow(): boolean {
-    return this.dice.every(
+  #allSlow(): boolean {
+    return this.#dice.every(
       ({ body }) =>
         body.velocity.length() < Magics.SETTLE_SPEED &&
         body.angularVelocity.length() < Magics.SETTLE_ANGULAR
     );
   }
 
-  private declare(): void {
-    this.settled = true;
+  #declare(): void {
+    this.#settled = true;
     this.stop();
-    this.onSettled?.();
+    this.#onSettled?.();
   }
 }
