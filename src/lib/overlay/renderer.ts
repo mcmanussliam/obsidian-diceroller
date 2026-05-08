@@ -51,7 +51,7 @@ export class Renderer {
       Magics.CAMERA_FOV,
       window.innerWidth / window.innerHeight,
       Magics.CAMERA_NEAR,
-      Magics.CAMERA_FAR,
+      Magics.CAMERA_FAR
     );
     this.camera.position.set(0, Magics.CAMERA_POS_Y, Magics.CAMERA_POS_Z);
     this.camera.lookAt(0, 0, 0);
@@ -124,7 +124,11 @@ export class Renderer {
     key.shadow.bias = Magics.SHADOW_BIAS;
     this.scene.add(key);
 
-    const fill = new THREE.PointLight(0x8899cc, Magics.FILL_LIGHT_INTENSITY, Magics.FILL_LIGHT_RANGE);
+    const fill = new THREE.PointLight(
+      0x8899cc,
+      Magics.FILL_LIGHT_INTENSITY,
+      Magics.FILL_LIGHT_RANGE
+    );
     fill.position.set(-8, 7, -3);
     this.scene.add(fill);
 

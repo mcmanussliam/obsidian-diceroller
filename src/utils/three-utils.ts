@@ -1,5 +1,5 @@
 import * as CANNON from 'cannon-es';
-import * as THREE from 'three';
+import type * as THREE from 'three';
 
 /**
  * Converts a `THREE.BufferGeometry` into a `CANNON.ConvexPolyhedron` for physics simulation.
@@ -36,19 +36,18 @@ export function geomToConvex(geometry: THREE.BufferGeometry): CANNON.ConvexPolyh
       const a = getIdx(index.getX(i));
       const b = getIdx(index.getX(i + 1));
       const c = getIdx(index.getX(i + 2));
-      if (a === b || b === c || a ===c) {
+      if (a === b || b === c || a === c) {
         continue;
       }
 
       faces.push([a, b, c]);
     }
-
   } else {
     for (let i = 0; i < posAttr.count; i += 3) {
       const a = getIdx(i);
       const b = getIdx(i + 1);
       const c = getIdx(i + 2);
-      if (a === b || b === c || a ===c) {
+      if (a === b || b === c || a === c) {
         continue;
       }
 

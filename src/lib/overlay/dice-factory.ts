@@ -83,12 +83,10 @@ export class DiceFactory {
     const dark = isDark(color);
     const edgeColor = dark ? 0xffffff : 0x000000;
 
-    let visualGeo: THREE.BufferGeometry;
-    let material: THREE.Material | THREE.Material[];
-
-    visualGeo = physicsGeo.toNonIndexed();
+    const visualGeo = physicsGeo.toNonIndexed();
     visualGeo.computeVertexNormals();
-    material = new THREE.MeshStandardMaterial({
+
+    const material = new THREE.MeshStandardMaterial({
       color,
       flatShading: true,
       roughness: Magics.MATERIAL_ROUGHNESS,

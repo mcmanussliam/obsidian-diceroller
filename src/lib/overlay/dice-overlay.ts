@@ -107,7 +107,7 @@ export class DiceOverlay {
       this.physics,
       this.renderer,
       this.dice,
-      this.settings.animationDuration,
+      this.settings.animationDuration
     );
   }
 
