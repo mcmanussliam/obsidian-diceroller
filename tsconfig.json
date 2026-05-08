@@ -14,8 +14,10 @@
     "sourceMap": true,
     "skipLibCheck": true,
     "paths": {
-      "rpg-dice-roller": ["./node_modules/rpg-dice-roller/types/index.d.ts"]
+      "rpg-dice-roller": ["./node_modules/rpg-dice-roller/types/index.d.ts"],
+      "@/*": ["./src/*"]
     },
+    "baseUrl": ".",
     "resolveJsonModule": true
   },
   "include": ["src/**/*"],

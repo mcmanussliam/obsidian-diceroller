@@ -3,6 +3,11 @@ import { resolve } from 'path';
 import { copyFileSync } from 'fs';
 
 export default defineConfig(({ mode }) => ({
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, 'src'),
+    },
+  },
   build: {
     lib: {
       entry: resolve(__dirname, 'src/main.ts'),
