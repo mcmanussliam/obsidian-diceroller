@@ -4,9 +4,9 @@ import {
   DEFAULT_SETTINGS,
   DiceRollerSettingTab,
   type DiceRollerSettings,
-} from './settings/plugin-settings';
-import { registerCommands } from './commands/register-commands';
-import { DiceOverlay } from './overlay/dice-overlay';
+} from './lib/settings/plugin-settings';
+import { registerCommands } from './lib/register-commands';
+import { DiceOverlay } from './lib/overlay/dice-overlay';
 
 export default class DiceRollerPlugin extends Plugin {
   public settings!: DiceRollerSettings;

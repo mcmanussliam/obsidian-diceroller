@@ -1,8 +1,9 @@
 import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
 import { clampSides, type DieSides } from '../parser/dice-parser';
-import { colorToHex, isDark } from '../utils/color';
-import { geomToConvex, makeNumberTexture } from '../utils/three-utils';
+import { isDark } from '../../utils/color';
+import { geomToConvex } from '../../utils/three-utils';
+import { DecagonGeometry } from '../geometry/decagon-geometry';
 
 enum Magics {
   // Die geometry, shared radius for all non-cube shapes
@@ -56,55 +57,43 @@ export class DiceFactory {
 
   private readonly physicsGeoCache = new Map<DieSides, THREE.BufferGeometry>();
 
-  constructor(physicsMaterial: CANNON.Material) {
+  public constructor(physicsMaterial: CANNON.Material) {
     this.physicsMaterial = physicsMaterial;
   }
 
-  createDie(sides: DieSides, intensity: number): DieObject {
+  public createDie(sides: DieSides, intensity: number): DieObject {
     const s = clampSides(sides);
     const physicsGeo = this.getPhysicsGeo(s);
     const mesh = this.buildMesh(s, physicsGeo);
     const body = this.buildBody(s, physicsGeo, intensity);
+
     return { mesh, body, sides: s };
   }
 
-  dispose(): void {
+  public dispose(): void {
     for (const geo of this.physicsGeoCache.values()) {
       geo.dispose();
     }
+
     this.physicsGeoCache.clear();
   }
 
   private buildMesh(sides: DieSides, physicsGeo: THREE.BufferGeometry): THREE.Mesh {
     const color = DIE_COLORS[sides];
-    const hexColor = colorToHex(color);
     const dark = isDark(color);
-    const textColor = dark ? '#ffffff' : '#222222';
     const edgeColor = dark ? 0xffffff : 0x000000;
 
     let visualGeo: THREE.BufferGeometry;
     let material: THREE.Material | THREE.Material[];
 
-    if (sides === 6) {
-      visualGeo = physicsGeo;
-      material = [1, 2, 3, 4, 5, 6].map(
-        (n) =>
-          new THREE.MeshStandardMaterial({
-            map: makeNumberTexture(n, hexColor, textColor),
-            roughness: Magics.MATERIAL_ROUGHNESS,
-            metalness: 0.1,
-          })
-      );
-    } else {
-      visualGeo = physicsGeo.toNonIndexed();
-      visualGeo.computeVertexNormals();
-      material = new THREE.MeshStandardMaterial({
-        color,
-        flatShading: true,
-        roughness: Magics.MATERIAL_ROUGHNESS,
-        metalness: Magics.MATERIAL_METALNESS,
-      });
-    }
+    visualGeo = physicsGeo.toNonIndexed();
+    visualGeo.computeVertexNormals();
+    material = new THREE.MeshStandardMaterial({
+      color,
+      flatShading: true,
+      roughness: Magics.MATERIAL_ROUGHNESS,
+      metalness: Magics.MATERIAL_METALNESS,
+    });
 
     const mesh = new THREE.Mesh(visualGeo, material);
     mesh.castShadow = true;
@@ -136,18 +125,10 @@ export class DiceFactory {
     body.sleepSpeedLimit = Magics.SLEEP_SPEED;
     body.sleepTimeLimit = Magics.SLEEP_TIME;
 
-    if (sides === 6) {
-      body.addShape(
-        new CANNON.Box(
-          new CANNON.Vec3(Magics.BOX_HALF_EXTENT, Magics.BOX_HALF_EXTENT, Magics.BOX_HALF_EXTENT)
-        )
-      );
-    } else {
-      try {
-        body.addShape(geomToConvex(physicsGeo));
-      } catch {
-        body.addShape(new CANNON.Sphere(Magics.FALLBACK_SPHERE_RADIUS));
-      }
+    try {
+      body.addShape(geomToConvex(physicsGeo));
+    } catch {
+      body.addShape(new CANNON.Sphere(Magics.FALLBACK_SPHERE_RADIUS));
     }
 
     const spawnX = (Math.random() - 0.5) * Magics.SPAWN_X_SPREAD;
@@ -191,58 +172,12 @@ function buildGeometry(sides: DieSides): THREE.BufferGeometry {
     case 8:
       return new THREE.OctahedronGeometry(Magics.DIE_RADIUS);
     case 10:
-      return buildD10Geometry(Magics.DIE_RADIUS);
+      return new DecagonGeometry(Magics.DIE_RADIUS);
     case 12:
       return new THREE.DodecahedronGeometry(Magics.DIE_RADIUS);
     case 20:
       return new THREE.IcosahedronGeometry(Magics.DIE_RADIUS);
     case 100:
-      return buildD10Geometry(Magics.DIE_RADIUS);
+      return new DecagonGeometry(Magics.DIE_RADIUS);
   }
-}
-
-function buildD10Geometry(r: number): THREE.BufferGeometry {
-  const FACES = 5;
-  const UPPER_Y = r * 0.35;
-  const LOWER_Y = r * 0.65;
-  const RING_R = r * 0.82;
-
-  const verts: number[] = [];
-  const indices: number[] = [];
-
-  const upper: number[] = [];
-  for (let i = 0; i < FACES; i++) {
-    const angle = (2 * Math.PI * i) / FACES + Math.PI / FACES;
-    upper.push(verts.length / 3);
-    verts.push(RING_R * Math.cos(angle), UPPER_Y, RING_R * Math.sin(angle));
-  }
-
-  const lower: number[] = [];
-  for (let i = 0; i < FACES; i++) {
-    const angle = (2 * Math.PI * i) / FACES;
-    lower.push(verts.length / 3);
-    verts.push(RING_R * Math.cos(angle), -UPPER_Y, RING_R * Math.sin(angle));
-  }
-
-  const top = verts.length / 3;
-  verts.push(0, LOWER_Y, 0);
-  const bot = verts.length / 3;
-  verts.push(0, -LOWER_Y, 0);
-
-  for (let i = 0; i < FACES; i++) indices.push(top, upper[i], upper[(i + 1) % FACES]);
-  for (let i = 0; i < FACES; i++) {
-    const u0 = upper[i];
-    const u1 = upper[(i + 1) % FACES];
-    const l0 = lower[i];
-    const l1 = lower[(i + 1) % FACES];
-    indices.push(u0, l0, u1);
-    indices.push(l0, l1, u1);
-  }
-  for (let i = 0; i < FACES; i++) indices.push(bot, lower[(i + 1) % FACES], lower[i]);
-
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
-  geo.setIndex(indices);
-  geo.computeVertexNormals();
-  return geo;
 }

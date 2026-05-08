@@ -1,47 +1,6 @@
 import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
 
-enum Magics {
-  TEXTURE_SIZE = 128,
-  TEXTURE_INSET = 4,
-  TEXTURE_CORNER_RADIUS = 12,
-  TEXTURE_FONT_RATIO = 0.45,
-}
-
-/**
- * Creates a canvas texture with a centred number drawn on a rounded-rectangle background.
- * Used to label each face of a D6.
- */
-export function makeNumberTexture(num: number, bg: string, fg: string): THREE.CanvasTexture {
-  const canvas = document.createElement('canvas');
-  canvas.width = Magics.TEXTURE_SIZE;
-  canvas.height = Magics.TEXTURE_SIZE;
-
-  const ctx = canvas.getContext('2d');
-  if (!ctx) {
-    throw new Error('Failed to get 2D canvas context');
-  }
-
-  ctx.fillStyle = bg;
-  ctx.beginPath();
-  ctx.roundRect(
-    Magics.TEXTURE_INSET,
-    Magics.TEXTURE_INSET,
-    Magics.TEXTURE_SIZE - Magics.TEXTURE_INSET * 2,
-    Magics.TEXTURE_SIZE - Magics.TEXTURE_INSET * 2,
-    Magics.TEXTURE_CORNER_RADIUS
-  );
-  ctx.fill();
-
-  ctx.fillStyle = fg;
-  ctx.font = `bold ${Magics.TEXTURE_SIZE * Magics.TEXTURE_FONT_RATIO}px "Georgia", serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(String(num), Magics.TEXTURE_SIZE / 2, Magics.TEXTURE_SIZE / 2);
-
-  return new THREE.CanvasTexture(canvas);
-}
-
 /**
  * Converts a `THREE.BufferGeometry` into a `CANNON.ConvexPolyhedron` for physics simulation.
  * Deduplicates vertices by position to prevent zero-area faces that would crash `cannon-es`.
