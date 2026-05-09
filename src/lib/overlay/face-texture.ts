@@ -55,7 +55,8 @@ export function generateFaceTexture(
         ctx.fillText(label, x + cx, y + cy);
       }
     } else {
-      const fontSize = label.length > 1 ? Math.round(CELL_SIZE * 0.36) : Math.round(CELL_SIZE * 0.44);
+      const fontSize =
+        label.length > 1 ? Math.round(CELL_SIZE * 0.36) : Math.round(CELL_SIZE * 0.44);
       ctx.font = `bold ${fontSize}px Georgia, serif`;
       ctx.fillText(label, x + faceCentroids[i].cx, y + faceCentroids[i].cy);
     }

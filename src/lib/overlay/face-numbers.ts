@@ -47,12 +47,12 @@ export function assignFaceNumbers(
  */
 export function labelToResult(label: string, sides: DieSides): number {
   if (sides === 10) {
-    return label === '0' ? 10 : parseInt(label, 10);
+    return label === '0' ? 10 : Number.parseInt(label, 10);
   }
   if (sides === 100) {
-    return label === '00' ? 100 : parseInt(label, 10);
+    return label === '00' ? 100 : Number.parseInt(label, 10);
   }
-  return parseInt(label, 10);
+  return Number.parseInt(label, 10);
 }
 
 function assignSequential(
