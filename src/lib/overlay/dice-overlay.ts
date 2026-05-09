@@ -1,4 +1,3 @@
-import type { App } from 'obsidian';
 import type { DiceRollerSettings } from '@/lib/settings/plugin-settings';
 import { clampSides, extractGroups, parseAndRoll } from '@/lib/parser/dice-parser';
 import { ResultDisplay } from '@/lib/ui/result-display';
@@ -19,8 +18,6 @@ enum Magics {
 }
 
 export class DiceOverlay {
-  readonly #app: App;
-
   readonly #settings: DiceRollerSettings;
 
   #overlayEl: HTMLElement | null = null;
@@ -41,8 +38,7 @@ export class DiceOverlay {
 
   #rollStartTime = 0;
 
-  public constructor(app: App, settings: DiceRollerSettings) {
-    this.#app = app;
+  public constructor(settings: DiceRollerSettings) {
     this.#settings = settings;
   }
 
@@ -132,10 +128,6 @@ export class DiceOverlay {
   #onSettled(total: number, output: string, notation: string): void {
     this.#resultDisplay?.show({ notation, total, output }, this.#settings.resultDisplayDuration);
 
-    if (this.#settings.autoInsertResult) {
-      this.#insertResult(output);
-    }
-
     const teardownMs =
       (this.#settings.resultDisplayDuration + Magics.TEARDOWN_EXTRA_S) * 1000 +
       Magics.FADE_DURATION_MS;
@@ -143,14 +135,6 @@ export class DiceOverlay {
     setTimeout(() => {
       this.#fadeOut(() => this.destroy());
     }, teardownMs);
-  }
-
-  #insertResult(output: string): void {
-    const editor = this.#app.workspace.activeEditor?.editor;
-    if (!editor) return;
-
-    const cursor = editor.getCursor();
-    editor.replaceRange(`\n${output}`, cursor);
   }
 
   #fadeIn(): void {

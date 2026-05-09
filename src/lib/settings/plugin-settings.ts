@@ -5,9 +5,6 @@ export interface DiceRollerSettings {
   /** Maximum seconds before dice are force-settled regardless of motion. */
   animationDuration: number;
 
-  /** When true, the roll result is appended to the active note on settle. */
-  autoInsertResult: boolean;
-
   /** Opacity of the full-screen overlay canvas (0–1). */
   overlayOpacity: number;
 
@@ -20,7 +17,6 @@ export interface DiceRollerSettings {
 
 export const DEFAULT_SETTINGS: DiceRollerSettings = {
   animationDuration: 8,
-  autoInsertResult: false,
   overlayOpacity: 1.0,
   resultDisplayDuration: 3,
   shadowQuality: 'medium',
@@ -64,16 +60,6 @@ export class DiceRollerSettingTab extends PluginSettingTab {
             this.plugin.settings.resultDisplayDuration = value;
             await this.plugin.saveSettings();
           })
-      );
-
-    new Setting(containerEl)
-      .setName('Auto-insert result')
-      .setDesc('Append the roll result to the active note when dice settle.')
-      .addToggle((toggle) =>
-        toggle.setValue(this.plugin.settings.autoInsertResult).onChange(async (value) => {
-          this.plugin.settings.autoInsertResult = value;
-          await this.plugin.saveSettings();
-        })
       );
 
     new Setting(containerEl)
