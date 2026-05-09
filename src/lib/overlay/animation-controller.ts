@@ -1,3 +1,4 @@
+import * as CANNON from 'cannon-es';
 import type { DieObject } from '@/lib/overlay/dice-factory';
 import type { PhysicsWorld } from '@/lib/overlay/physics-world';
 import type { Renderer } from '@/lib/overlay/renderer';
@@ -5,8 +6,6 @@ import type { Renderer } from '@/lib/overlay/renderer';
 enum Magics {
   FIXED_STEP = 1 / 60,
 
-  SETTLE_SPEED = 0.06,
-  SETTLE_ANGULAR = 0.08,
   SETTLE_CONFIRM_TIME = 0.7,
 
   DELTA_CAP = 0.1,
@@ -113,11 +112,7 @@ export class AnimationController {
   }
 
   #allSlow(): boolean {
-    return this.#dice.every(
-      ({ body }) =>
-        body.velocity.length() < Magics.SETTLE_SPEED &&
-        body.angularVelocity.length() < Magics.SETTLE_ANGULAR
-    );
+    return this.#dice.every(({ body }) => body.sleepState === CANNON.Body.SLEEPING);
   }
 
   #declare(): void {

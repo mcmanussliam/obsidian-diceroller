@@ -13,6 +13,9 @@ enum Magics {
 
   // Extra wait after result display before tearing down, gives the user time to read
   TEARDOWN_EXTRA_S = 0.6,
+
+  // Minimum ms after a roll starts before a new roll can replace it (prevents double-trigger)
+  ROLL_DEBOUNCE_MS = 1000,
 }
 
 export class DiceOverlay {
@@ -36,13 +39,23 @@ export class DiceOverlay {
 
   #active = false;
 
+  #rollStartTime = 0;
+
   public constructor(app: App, settings: DiceRollerSettings) {
     this.#app = app;
     this.#settings = settings;
   }
 
   public roll(notation: string): void {
-    if (this.#active) this.destroy();
+    if (this.#active) {
+      if (Date.now() - this.#rollStartTime < Magics.ROLL_DEBOUNCE_MS) {
+        return;
+      }
+
+      this.destroy();
+    }
+
+    this.#rollStartTime = Date.now();
 
     const result = parseAndRoll(notation);
     const groups = extractGroups(notation);
