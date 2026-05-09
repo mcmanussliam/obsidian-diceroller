@@ -1,19 +1,14 @@
+import { Notice } from 'obsidian';
 import type { DiceRollerSettings } from '@/lib/settings/plugin-settings';
 import { clampSides, extractGroups, parseAndRoll } from '@/lib/parser/dice-parser';
-import { ResultDisplay } from '@/lib/ui/result-display';
 import { AnimationController } from '@/lib/overlay/animation-controller';
 import { DiceFactory, type DieObject } from '@/lib/overlay/dice-factory';
 import { PhysicsWorld } from '@/lib/overlay/physics-world';
 import { Renderer } from '@/lib/overlay/renderer';
 
 enum Magics {
-  // Overlay fade animation
   FADE_DURATION_MS = 350,
-
-  // Extra wait after result display before tearing down, gives the user time to read
   TEARDOWN_EXTRA_S = 0.6,
-
-  // Minimum ms after a roll starts before a new roll can replace it (prevents double-trigger)
   ROLL_DEBOUNCE_MS = 1000,
 }
 
@@ -29,8 +24,6 @@ export class DiceOverlay {
   #factory: DiceFactory | null = null;
 
   #animation: AnimationController | null = null;
-
-  #resultDisplay: ResultDisplay | null = null;
 
   #dice: DieObject[] = [];
 
@@ -64,15 +57,13 @@ export class DiceOverlay {
     this.#fadeIn();
 
     this.#animation?.start(() => {
-      this.#onSettled(result.total, result.output, notation);
+      this.#onSettled(result.total, result.output);
     });
   }
 
   public destroy(): void {
     this.#animation?.stop();
     this.#animation = null;
-    this.#resultDisplay?.dispose();
-    this.#resultDisplay = null;
 
     for (const die of this.#dice) {
       this.#physics?.removeBody(die.body);
@@ -98,7 +89,6 @@ export class DiceOverlay {
     const bounds = this.#renderer.getGroundBounds();
     this.#physics = new PhysicsWorld(bounds);
     this.#factory = new DiceFactory(this.#physics.dicePhysicsMaterial, bounds);
-    this.#resultDisplay = new ResultDisplay(this.#overlayEl);
     this.#active = true;
   }
 
@@ -125,16 +115,15 @@ export class DiceOverlay {
     );
   }
 
-  #onSettled(total: number, output: string, notation: string): void {
-    this.#resultDisplay?.show({ notation, total, output }, this.#settings.resultDisplayDuration);
-
-    const teardownMs =
-      (this.#settings.resultDisplayDuration + Magics.TEARDOWN_EXTRA_S) * 1000 +
-      Magics.FADE_DURATION_MS;
+  #onSettled(total: number, output: string): void {
+    const fragment = new DocumentFragment();
+    fragment.createEl('div', { cls: 'dice-notice__total', text: String(total) });
+    fragment.createEl('div', { cls: 'dice-notice__breakdown', text: output });
+    new Notice(fragment, this.#settings.resultDisplayDuration * 1000);
 
     setTimeout(() => {
       this.#fadeOut(() => this.destroy());
-    }, teardownMs);
+    }, Magics.TEARDOWN_EXTRA_S * 1000);
   }
 
   #fadeIn(): void {
