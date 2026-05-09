@@ -14,12 +14,11 @@ export function registerCommands(plugin: DiceRollerPlugin, app: App): void {
     },
   });
 
-  plugin.addCommand({
-    id: 'roll-d20',
-    name: 'Roll d20',
-    hotkeys: [{ modifiers: ['Alt'], key: 'r' }],
-    callback: () => {
-      plugin.overlay.roll('1d20');
-    },
-  });
+  for (const n of [4, 6, 8, 10, 12, 20, 100]) {
+    plugin.addCommand({
+      id: `roll-d${n}`,
+      name: `Roll d${n}`,
+      callback: () => plugin.overlay.roll(`1d${n}`),
+    });
+  }
 }
