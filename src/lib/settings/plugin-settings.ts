@@ -5,9 +5,6 @@ export interface DiceRollerSettings {
   /** Maximum seconds before dice are force-settled regardless of motion. */
   animationDuration: number;
 
-  /** Opacity of the full-screen overlay canvas (0–1). */
-  overlayOpacity: number;
-
   /** Seconds the result card remains visible before fading out. */
   resultDisplayDuration: number;
 
@@ -17,7 +14,6 @@ export interface DiceRollerSettings {
 
 export const DEFAULT_SETTINGS: DiceRollerSettings = {
   animationDuration: 8,
-  overlayOpacity: 1.0,
   resultDisplayDuration: 3,
   shadowQuality: 'medium',
 };
