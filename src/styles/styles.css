@@ -14,7 +14,7 @@
 .dice-overlay {
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: calc(var(--layer-modal, 50) - 1);
   pointer-events: none;
 }
 
