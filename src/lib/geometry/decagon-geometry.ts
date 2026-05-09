@@ -8,54 +8,93 @@ export class DecagonGeometry extends THREE.BufferGeometry {
 
   public init(r: number): void {
     const FACES = 5;
-    const RING_Y = r * 0.35;
-    const APEX_Y = r * 0.65;
+
+    const APEX_Y = r * 0.9;
     const RING_R = r * 0.82;
 
-    const verts: number[] = [];
-    const indices: number[] = [];
+    const c = Math.cos(Math.PI / FACES);
+    const RING_Y = APEX_Y * ((1 - c) / (1 + c));
 
-    // Upper ring offset by half a step so upper/lower vertices interleave
+    const points: THREE.Vector3[] = [];
+    const verts: number[] = [];
+
     const upper: number[] = [];
+    const lower: number[] = [];
+
     for (let i = 0; i < FACES; i++) {
       const angle = (2 * Math.PI * i) / FACES + Math.PI / FACES;
-      upper.push(verts.length / 3);
-      verts.push(RING_R * Math.cos(angle), RING_Y, RING_R * Math.sin(angle));
+      upper.push(points.length);
+      points.push(
+        new THREE.Vector3(
+          RING_R * Math.cos(angle),
+          RING_Y,
+          RING_R * Math.sin(angle)
+        )
+      );
     }
 
-    const lower: number[] = [];
     for (let i = 0; i < FACES; i++) {
       const angle = (2 * Math.PI * i) / FACES;
-      lower.push(verts.length / 3);
-      verts.push(RING_R * Math.cos(angle), -RING_Y, RING_R * Math.sin(angle));
+      lower.push(points.length);
+      points.push(
+        new THREE.Vector3(
+          RING_R * Math.cos(angle),
+          -RING_Y,
+          RING_R * Math.sin(angle)
+        )
+      );
     }
 
-    const top = verts.length / 3;
-    verts.push(0, APEX_Y, 0);
-    const bot = verts.length / 3;
-    verts.push(0, -APEX_Y, 0);
+    const top = points.length;
+    points.push(new THREE.Vector3(0, APEX_Y, 0));
 
-    // 10 kite faces of a pentagonal trapezohedron:
-    // 5 upper kites — each spans: top, upper[i+1], lower[i], upper[i]
+    const bottom = points.length;
+    points.push(new THREE.Vector3(0, -APEX_Y, 0));
+
+    const addTriangle = (a: number, b: number, c: number): void => {
+      const A = points[a];
+      const B = points[b];
+      const C = points[c];
+
+      const normal = new THREE.Vector3()
+        .subVectors(B, A)
+        .cross(new THREE.Vector3().subVectors(C, A));
+
+      const center = new THREE.Vector3()
+        .add(A)
+        .add(B)
+        .add(C)
+        .multiplyScalar(1 / 3);
+
+      const order = normal.dot(center) < 0 ? [a, c, b] : [a, b, c];
+
+      for (const idx of order) {
+        const p = points[idx];
+        verts.push(p.x, p.y, p.z);
+      }
+    };
+
     for (let i = 0; i < FACES; i++) {
       const u0 = upper[i];
-      const u1 = upper[(i + 1) % FACES];
+      const uPrev = upper[(i - 1 + FACES) % FACES];
       const l0 = lower[i];
-      indices.push(top, u1, l0);
-      indices.push(top, l0, u0);
+
+      addTriangle(top, u0, l0);
+      addTriangle(top, l0, uPrev);
     }
 
-    // 5 lower kites — each spans: bot, lower[i], upper[i+1], lower[i+1]
     for (let i = 0; i < FACES; i++) {
       const l0 = lower[i];
-      const l1 = lower[(i + 1) % FACES];
-      const u1 = upper[(i + 1) % FACES];
-      indices.push(bot, l0, u1);
-      indices.push(bot, u1, l1);
+      const lNext = lower[(i + 1) % FACES];
+      const u0 = upper[i];
+
+      addTriangle(bottom, l0, u0);
+      addTriangle(bottom, u0, lNext);
     }
 
     this.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
-    this.setIndex(indices);
+
     this.computeVertexNormals();
+    this.computeBoundingSphere();
   }
 }
