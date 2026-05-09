@@ -8,27 +8,39 @@ export interface DiceGroup {
   readonly sides: number;
 }
 
-export interface ParsedRoll {
+export interface ParsedDice {
   /** Original dice notation string. */
   readonly notation: string;
 
-  /** Sum of all rolled values plus any modifiers. */
-  readonly total: number;
-
-  /** Human-readable breakdown produced by rpg-dice-roller. */
-  readonly output: string;
-
   /** Dice groups extracted for physical rendering. */
   readonly groups: readonly DiceGroup[];
+
+  /** Additive modifier (e.g. +3 or -1), derived from total minus sum of die values. */
+  readonly modifier: number;
 }
 
-export function parseAndRoll(notation: string): ParsedRoll {
+export function parseDice(notation: string): ParsedDice {
   const roll = new DiceRoll(notation);
+  const groups = extractGroups(notation);
+
+  let diceSum = 0;
+  for (const item of roll.rolls as unknown[]) {
+    if (item === null || typeof item !== 'object') {
+      continue;
+    }
+    const { rolls } = item as { rolls?: unknown };
+    if (!Array.isArray(rolls)) {
+      continue;
+    }
+    for (const r of rolls) {
+      diceSum += (r as { value: number }).value;
+    }
+  }
+
   return {
     notation,
-    total: roll.total,
-    output: roll.output,
-    groups: extractGroups(notation),
+    groups,
+    modifier: roll.total - diceSum,
   };
 }
 

@@ -1,6 +1,6 @@
 import { Notice } from 'obsidian';
 import type { DiceRollerSettings } from '@/lib/settings/plugin-settings';
-import { clampSides, extractGroups, parseAndRoll } from '@/lib/parser/dice-parser';
+import { clampSides, parseDice, type ParsedDice, type DieSides } from '@/lib/parser/dice-parser';
 import { AnimationController } from '@/lib/overlay/animation-controller';
 import { DiceFactory, type DieObject } from '@/lib/overlay/dice-factory';
 import { PhysicsWorld } from '@/lib/overlay/physics-world';
@@ -8,7 +8,7 @@ import { Renderer } from '@/lib/overlay/renderer';
 
 enum Magics {
   FADE_DURATION_MS = 350,
-  TEARDOWN_EXTRA_S = 0.6,
+  TEARDOWN_EXTRA_MS = 600,
   ROLL_DEBOUNCE_MS = 1000,
 }
 
@@ -16,19 +16,14 @@ export class DiceOverlay {
   readonly #settings: DiceRollerSettings;
 
   #overlayEl: HTMLElement | null = null;
-
   #renderer: Renderer | null = null;
-
   #physics: PhysicsWorld | null = null;
-
   #factory: DiceFactory | null = null;
-
   #animation: AnimationController | null = null;
-
   #dice: DieObject[] = [];
-
+  #diceGroups: { sides: DieSides; count: number }[] = [];
+  #modifier = 0;
   #active = false;
-
   #rollStartTime = 0;
 
   public constructor(settings: DiceRollerSettings) {
@@ -40,24 +35,25 @@ export class DiceOverlay {
       if (Date.now() - this.#rollStartTime < Magics.ROLL_DEBOUNCE_MS) {
         return;
       }
-
       this.destroy();
     }
 
     this.#rollStartTime = Date.now();
 
-    const result = parseAndRoll(notation);
-    const groups = extractGroups(notation);
-    if (groups.length === 0) {
+    const parsed = parseDice(notation);
+    if (parsed.groups.length === 0) {
       return;
     }
 
     this.#build();
-    this.#spawnDice(groups);
+    this.#spawnDice(parsed);
     this.#fadeIn();
 
     this.#animation?.start(() => {
-      this.#onSettled(result.total, result.output);
+      if (this.#active) {
+        const { total, output } = this.#computeResults();
+        this.#onSettled(total, output);
+      }
     });
   }
 
@@ -69,6 +65,7 @@ export class DiceOverlay {
       this.#physics?.removeBody(die.body);
     }
     this.#dice = [];
+    this.#diceGroups = [];
 
     this.#renderer?.dispose();
     this.#renderer = null;
@@ -92,15 +89,17 @@ export class DiceOverlay {
     this.#active = true;
   }
 
-  #spawnDice(groups: ReturnType<typeof extractGroups>): void {
+  #spawnDice(parsed: ParsedDice): void {
     if (!this.#factory || !this.#physics || !this.#renderer) {
       return;
     }
 
-    for (const group of groups) {
-      const sides = clampSides(group.sides);
+    this.#diceGroups = parsed.groups.map((g) => ({ sides: clampSides(g.sides), count: g.count }));
+    this.#modifier = parsed.modifier;
+
+    for (const group of this.#diceGroups) {
       for (let i = 0; i < group.count; i++) {
-        const die = this.#factory.createDie(sides);
+        const die = this.#factory.createDie(group.sides);
         this.#physics.addBody(die.body);
         this.#renderer.scene.add(die.mesh);
         this.#dice.push(die);
@@ -115,6 +114,33 @@ export class DiceOverlay {
     );
   }
 
+  #computeResults(): { total: number; output: string } {
+    let dieIdx = 0;
+    let diceTotal = 0;
+    const parts: string[] = [];
+
+    for (const group of this.#diceGroups) {
+      const values: number[] = [];
+      for (let i = 0; i < group.count; i++) {
+        const die = this.#dice[dieIdx++];
+        if (die) {
+          const value = die.readResult(die.mesh);
+          values.push(value);
+          diceTotal += value;
+        }
+      }
+      parts.push(`${group.count}d${group.sides}: [${values.join(', ')}]`);
+    }
+
+    const total = diceTotal + this.#modifier;
+    let output = parts.join(' + ');
+    if (this.#modifier > 0) output += ` + ${this.#modifier}`;
+    else if (this.#modifier < 0) output += ` - ${Math.abs(this.#modifier)}`;
+    output += ` = ${total}`;
+
+    return { total, output };
+  }
+
   #onSettled(total: number, output: string): void {
     const fragment = new DocumentFragment();
     fragment.createEl('div', { cls: 'dice-notice__total', text: String(total) });
@@ -123,11 +149,13 @@ export class DiceOverlay {
 
     setTimeout(() => {
       this.#fadeOut(() => this.destroy());
-    }, Magics.TEARDOWN_EXTRA_S * 1000);
+    }, Magics.TEARDOWN_EXTRA_MS);
   }
 
   #fadeIn(): void {
-    if (!this.#overlayEl) return;
+    if (!this.#overlayEl) {
+      return;
+    }
     this.#overlayEl.removeClass('dice-overlay--hidden');
     this.#overlayEl.addClass('dice-overlay--visible');
   }

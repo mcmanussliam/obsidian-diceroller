@@ -24,25 +24,13 @@ export class DecagonGeometry extends THREE.BufferGeometry {
     for (let i = 0; i < FACES; i++) {
       const angle = (2 * Math.PI * i) / FACES + Math.PI / FACES;
       upper.push(points.length);
-      points.push(
-        new THREE.Vector3(
-          RING_R * Math.cos(angle),
-          RING_Y,
-          RING_R * Math.sin(angle)
-        )
-      );
+      points.push(new THREE.Vector3(RING_R * Math.cos(angle), RING_Y, RING_R * Math.sin(angle)));
     }
 
     for (let i = 0; i < FACES; i++) {
       const angle = (2 * Math.PI * i) / FACES;
       lower.push(points.length);
-      points.push(
-        new THREE.Vector3(
-          RING_R * Math.cos(angle),
-          -RING_Y,
-          RING_R * Math.sin(angle)
-        )
-      );
+      points.push(new THREE.Vector3(RING_R * Math.cos(angle), -RING_Y, RING_R * Math.sin(angle)));
     }
 
     const top = points.length;
