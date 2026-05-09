@@ -86,8 +86,9 @@ export class DiceOverlay {
   #build(): void {
     this.#overlayEl = document.body.createDiv({ cls: 'dice-overlay dice-overlay--hidden' });
     this.#renderer = new Renderer(this.#overlayEl, this.#settings.shadowQuality);
-    this.#physics = new PhysicsWorld();
-    this.#factory = new DiceFactory(this.#physics.dicePhysicsMaterial);
+    const bounds = this.#renderer.getGroundBounds();
+    this.#physics = new PhysicsWorld(bounds);
+    this.#factory = new DiceFactory(this.#physics.dicePhysicsMaterial, bounds);
     this.#resultDisplay = new ResultDisplay(this.#overlayEl);
     this.#active = true;
   }
@@ -100,7 +101,7 @@ export class DiceOverlay {
     for (const group of groups) {
       const sides = clampSides(group.sides);
       for (let i = 0; i < group.count; i++) {
-        const die = this.#factory.createDie(sides, this.#settings.physicsIntensity);
+        const die = this.#factory.createDie(sides);
         this.#physics.addBody(die.body);
         this.#renderer.scene.add(die.mesh);
         this.#dice.push(die);

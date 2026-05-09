@@ -15,11 +15,13 @@ enum Magics {
   // Dice/dice contact, gentler bounce when dice hit each other
   DICE_FRICTION = 0.4,
   DICE_RESTITUTION = 0.3,
+}
 
-  // Invisible bounding walls that keep dice on screen
-  WALL_HALF_WIDTH = 11,
-  WALL_HALF_DEPTH = 9,
-  WALL_MID_HEIGHT = 5,
+export interface GroundBounds {
+  readonly minX: number;
+  readonly maxX: number;
+  readonly minZ: number;
+  readonly maxZ: number;
 }
 
 export class PhysicsWorld {
@@ -29,7 +31,7 @@ export class PhysicsWorld {
 
   readonly #diceMaterial: CANNON.Material;
 
-  public constructor() {
+  public constructor(bounds: GroundBounds) {
     this.world = new CANNON.World({
       gravity: new CANNON.Vec3(0, Magics.GRAVITY, 0),
     });
@@ -56,7 +58,7 @@ export class PhysicsWorld {
     );
 
     this.#addGround();
-    this.#addWalls();
+    this.#addWalls(bounds);
   }
 
   public get dicePhysicsMaterial(): CANNON.Material {
@@ -83,28 +85,19 @@ export class PhysicsWorld {
     const ground = new CANNON.Body({ mass: 0, material: this.#groundMaterial });
     ground.addShape(new CANNON.Plane());
     ground.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
-    ground.position.set(0, 0, 0);
     this.world.addBody(ground);
   }
 
-  #addWalls(): void {
+  #addWalls(bounds: GroundBounds): void {
     const wallDefs: Array<{ pos: CANNON.Vec3; euler: [number, number, number] }> = [
-      {
-        pos: new CANNON.Vec3(-Magics.WALL_HALF_WIDTH, Magics.WALL_MID_HEIGHT, 0),
-        euler: [0, Math.PI / 2, 0],
-      },
-      {
-        pos: new CANNON.Vec3(Magics.WALL_HALF_WIDTH, Magics.WALL_MID_HEIGHT, 0),
-        euler: [0, -Math.PI / 2, 0],
-      },
-      {
-        pos: new CANNON.Vec3(0, Magics.WALL_MID_HEIGHT, -Magics.WALL_HALF_DEPTH),
-        euler: [0, 0, 0],
-      },
-      {
-        pos: new CANNON.Vec3(0, Magics.WALL_MID_HEIGHT, Magics.WALL_HALF_DEPTH),
-        euler: [0, Math.PI, 0],
-      },
+      // Left wall — normal faces +X (inward)
+      { pos: new CANNON.Vec3(bounds.minX, 0, 0), euler: [0, Math.PI / 2, 0] },
+      // Right wall — normal faces -X (inward)
+      { pos: new CANNON.Vec3(bounds.maxX, 0, 0), euler: [0, -Math.PI / 2, 0] },
+      // Top wall (screen top, minZ) — normal faces +Z (inward)
+      { pos: new CANNON.Vec3(0, 0, bounds.minZ), euler: [0, 0, 0] },
+      // Bottom wall (screen bottom, maxZ) — normal faces -Z (inward)
+      { pos: new CANNON.Vec3(0, 0, bounds.maxZ), euler: [0, Math.PI, 0] },
     ];
 
     for (const { pos, euler } of wallDefs) {

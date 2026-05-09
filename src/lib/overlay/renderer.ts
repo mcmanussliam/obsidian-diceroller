@@ -55,6 +55,7 @@ export class Renderer {
     );
     this.camera.position.set(0, Magics.CAMERA_POS_Y, Magics.CAMERA_POS_Z);
     this.camera.lookAt(0, 0, 0);
+    this.camera.updateMatrixWorld();
 
     this.threeRenderer = new THREE.WebGLRenderer({
       alpha: true,
@@ -81,6 +82,34 @@ export class Renderer {
     };
 
     window.addEventListener('resize', this.#onResize);
+  }
+
+  /** Returns the world-space AABB of the camera's view projected onto y=0. */
+  public getGroundBounds(): { minX: number; maxX: number; minZ: number; maxZ: number } {
+    const ndcCorners = [
+      new THREE.Vector3(-1, -1, 0.5),
+      new THREE.Vector3(1, -1, 0.5),
+      new THREE.Vector3(-1, 1, 0.5),
+      new THREE.Vector3(1, 1, 0.5),
+    ];
+
+    const xs: number[] = [];
+    const zs: number[] = [];
+
+    for (const ndc of ndcCorners) {
+      const world = ndc.clone().unproject(this.camera);
+      const dir = world.sub(this.camera.position).normalize();
+      const t = -this.camera.position.y / dir.y;
+      xs.push(this.camera.position.x + t * dir.x);
+      zs.push(this.camera.position.z + t * dir.z);
+    }
+
+    return {
+      minX: Math.min(...xs),
+      maxX: Math.max(...xs),
+      minZ: Math.min(...zs),
+      maxZ: Math.max(...zs),
+    };
   }
 
   public render(): void {

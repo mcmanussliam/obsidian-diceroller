@@ -5,9 +5,6 @@ export interface DiceRollerSettings {
   /** Maximum seconds before dice are force-settled regardless of motion. */
   animationDuration: number;
 
-  /** Throw force multiplier — 0.5 is gentle, 2.0 is wild. */
-  physicsIntensity: number;
-
   /** When true, the roll result is appended to the active note on settle. */
   autoInsertResult: boolean;
 
@@ -23,7 +20,6 @@ export interface DiceRollerSettings {
 
 export const DEFAULT_SETTINGS: DiceRollerSettings = {
   animationDuration: 8,
-  physicsIntensity: 1.0,
   autoInsertResult: false,
   overlayOpacity: 1.0,
   resultDisplayDuration: 3,
@@ -41,20 +37,6 @@ export class DiceRollerSettingTab extends PluginSettingTab {
   public display(): void {
     const { containerEl } = this;
     containerEl.empty();
-
-    new Setting(containerEl)
-      .setName('Physics intensity')
-      .setDesc('How hard the dice are thrown (0.5 = gentle, 2.0 = wild).')
-      .addSlider((slider) =>
-        slider
-          .setLimits(0.5, 2.0, 0.1)
-          .setValue(this.plugin.settings.physicsIntensity)
-          .setDynamicTooltip()
-          .onChange(async (value) => {
-            this.plugin.settings.physicsIntensity = value;
-            await this.plugin.saveSettings();
-          })
-      );
 
     new Setting(containerEl)
       .setName('Max animation duration')

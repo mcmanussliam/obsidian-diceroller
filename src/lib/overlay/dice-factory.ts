@@ -4,11 +4,11 @@ import { clampSides, type DieSides } from '@/lib/parser/dice-parser';
 import { isDark } from '@/utils/color';
 import { geomToConvex } from '@/utils/three-utils';
 import { DecagonGeometry } from '@/lib/geometry/decagon-geometry';
+import type { GroundBounds } from '@/lib/overlay/physics-world';
 
 enum Magics {
   // Die geometry, shared radius for all non-cube shapes
   DIE_RADIUS = 0.85,
-  BOX_HALF_EXTENT = 0.5,
   FALLBACK_SPHERE_RADIUS = 0.65,
 
   // Die material appearance
@@ -20,15 +20,21 @@ enum Magics {
   EDGE_THRESHOLD_ANGLE = 10,
 
   // Physics body initial motion
-  SPAWN_X_SPREAD = 16,
-  SPAWN_Y_BASE = 10,
-  SPAWN_Y_RAND = 4,
-  SPAWN_Z_SPREAD = 5,
   LINEAR_DAMPING = 0.25,
   ANGULAR_DAMPING = 0.25,
   SLEEP_SPEED = 0.08,
   SLEEP_TIME = 0.5,
-  SPIN_SCALE = 18,
+
+  // Spawn — bottom-right corner of the screen
+  SPAWN_HEIGHT = 9,
+  SPAWN_HEIGHT_RAND = 3,
+  SPAWN_CORNER_FACTOR = 0.82,
+  SPAWN_SCATTER = 2.5,
+
+  // Throw — fixed comfortable speed aimed toward upper-left area
+  THROW_SPEED = 12,
+  THROW_VY = -2,
+  THROW_SPIN = 14,
 }
 
 export interface DieObject {
@@ -57,15 +63,18 @@ export class DiceFactory {
 
   readonly #physicsGeoCache = new Map<DieSides, THREE.BufferGeometry>();
 
-  public constructor(physicsMaterial: CANNON.Material) {
+  readonly #bounds: GroundBounds;
+
+  public constructor(physicsMaterial: CANNON.Material, bounds: GroundBounds) {
     this.#physicsMaterial = physicsMaterial;
+    this.#bounds = bounds;
   }
 
-  public createDie(sides: DieSides, intensity: number): DieObject {
+  public createDie(sides: DieSides): DieObject {
     const s = clampSides(sides);
     const physicsGeo = this.#getPhysicsGeo(s);
     const mesh = this.#buildMesh(s, physicsGeo);
-    const body = this.#buildBody(physicsGeo, intensity);
+    const body = this.#buildBody(physicsGeo);
 
     return { mesh, body, sides: s };
   }
@@ -108,7 +117,7 @@ export class DiceFactory {
     return mesh;
   }
 
-  #buildBody(physicsGeo: THREE.BufferGeometry, intensity: number): CANNON.Body {
+  #buildBody(physicsGeo: THREE.BufferGeometry): CANNON.Body {
     const body = new CANNON.Body({
       mass: 1,
       material: this.#physicsMaterial,
@@ -125,17 +134,29 @@ export class DiceFactory {
       body.addShape(new CANNON.Sphere(Magics.FALLBACK_SPHERE_RADIUS));
     }
 
-    const spawnX = (Math.random() - 0.5) * Magics.SPAWN_X_SPREAD;
-    const spawnY = Magics.SPAWN_Y_BASE + Math.random() * Magics.SPAWN_Y_RAND;
-    const spawnZ = (Math.random() - 0.5) * Magics.SPAWN_Z_SPREAD;
+    const { minX, maxX, minZ, maxZ } = this.#bounds;
+
+    // Spawn near the bottom-right corner with small random scatter
+    const spawnX = maxX * Magics.SPAWN_CORNER_FACTOR + (Math.random() - 0.5) * Magics.SPAWN_SCATTER;
+    const spawnZ = maxZ * Magics.SPAWN_CORNER_FACTOR + (Math.random() - 0.5) * Magics.SPAWN_SCATTER;
+    const spawnY = Magics.SPAWN_HEIGHT + Math.random() * Magics.SPAWN_HEIGHT_RAND;
     body.position.set(spawnX, spawnY, spawnZ);
 
-    const vx = (-spawnX * 0.4 + (Math.random() - 0.5) * 4) * intensity;
-    const vy = (-3 - Math.random() * 3) * intensity;
-    const vz = (Math.random() - 0.5) * 4 * intensity;
-    body.velocity.set(vx, vy, vz);
+    // Throw toward a random point in the upper-left area of the play field
+    const targetX = minX * 0.3 + Math.random() * (maxX - minX) * 0.5;
+    const targetZ = minZ * 0.6 + Math.random() * (maxZ - minZ) * 0.3;
 
-    const spin = Magics.SPIN_SCALE * intensity;
+    const dx = targetX - spawnX;
+    const dz = targetZ - spawnZ;
+    const horizontalDist = Math.sqrt(dx * dx + dz * dz);
+
+    body.velocity.set(
+      (dx / horizontalDist) * Magics.THROW_SPEED,
+      Magics.THROW_VY,
+      (dz / horizontalDist) * Magics.THROW_SPEED
+    );
+
+    const spin = Magics.THROW_SPIN;
     body.angularVelocity.set(
       (Math.random() - 0.5) * spin,
       (Math.random() - 0.5) * spin,
