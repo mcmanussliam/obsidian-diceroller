@@ -1,5 +1,4 @@
 import { DiceRoll } from 'rpg-dice-roller';
-export { DICE_SIDES, DieSides, clampSides } from '@/dice/registry';
 
 export interface DiceGroup {
   /** Number of dice to roll. */
