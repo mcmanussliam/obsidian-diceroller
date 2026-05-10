@@ -11,24 +11,24 @@ export function clampSides(sides: number): DieSides {
 }
 
 export interface DieDefinition {
+  /** Number of faces. */
   readonly sides: DieSides;
+
   /** Builds the THREE geometry used for both physics and rendering. */
   readonly buildGeometry: (radius: number) => THREE.BufferGeometry;
-  /** Assigns face labels from sorted normals; returns one string per logical face. */
+
+  /** Maps face normals to label strings (e.g. "1", "20", "00"). */
   readonly assignLabels: (normals: readonly THREE.Vector3[]) => string[];
-  /** Converts a settled face label string to its numeric result value. */
+
+  /** Converts a settled face label to its numeric result (handles "0"→10, "00"→100). */
   readonly readResult: (label: string) => number;
-  /**
-   * When true, face numbers are drawn at the three corners rather than the
-   * centroid (d4 physical convention).  Also inverts result reading: the
-   * bottom face (lowest world-Y normal) wins instead of the top.
-   */
+
+  /** When true, numbers are drawn at corners rather than the centroid (d4 convention). */
   readonly vertexLabels: boolean;
 }
 
 const parseInt10 = (label: string): number => Number.parseInt(label, 10);
 
-/** Single source of truth for all supported die types. */
 export const DICE_REGISTRY: Record<DieSides, DieDefinition> = {
   4: {
     sides: 4,

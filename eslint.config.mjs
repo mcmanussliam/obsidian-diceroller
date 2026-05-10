@@ -28,5 +28,12 @@ export default tseslint.config(
   },
   ...obsidianmd.configs.recommended,
   prettier,
+  {
+    plugins: { '@typescript-eslint': tseslint.plugin },
+    rules: {
+      '@typescript-eslint/explicit-member-accessibility': ['error', { accessibility: 'explicit' }],
+      'lines-between-class-members': ['error', 'always'],
+    },
+  },
   globalIgnores(['node_modules', 'dist'])
 );

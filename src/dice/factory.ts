@@ -47,9 +47,13 @@ interface FaceInfo {
 
 export class DiceFactory {
   readonly #physicsMaterial: CANNON.Material;
+
   readonly #physicsGeoCache = new Map<DieSides, THREE.BufferGeometry>();
+
   readonly #faceInfoCache = new Map<DieSides, FaceInfo>();
+
   readonly #bounds: GroundBounds;
+
   readonly #theme: DieTheme;
 
   public constructor(

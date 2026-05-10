@@ -45,6 +45,7 @@ export class DiceOverlay {
       if (Date.now() - this.#rollStartTime < Magics.ROLL_DEBOUNCE_MS) {
         return;
       }
+
       this.destroy();
     }
 
@@ -60,10 +61,12 @@ export class DiceOverlay {
     this.#fadeIn();
 
     this.#animation?.start(() => {
-      if (this.#active) {
-        const { total, output } = this.#computeResults();
-        this.#onSettled(total, output);
+      if (!this.#active) {
+        return;
       }
+
+      const { total, output } = this.#computeResults();
+      this.#onSettled(total, output);
     });
   }
 
@@ -80,8 +83,10 @@ export class DiceOverlay {
 
     this.#renderer?.dispose();
     this.#renderer = null;
+
     this.#physics?.dispose();
     this.#physics = null;
+
     this.#factory?.dispose();
     this.#factory = null;
 
@@ -145,8 +150,13 @@ export class DiceOverlay {
 
     const total = diceTotal + this.#modifier;
     let output = parts.join(' + ');
-    if (this.#modifier > 0) output += ` + ${this.#modifier}`;
-    else if (this.#modifier < 0) output += ` - ${Math.abs(this.#modifier)}`;
+
+    if (this.#modifier > 0) {
+      output += ` + ${this.#modifier}`;
+    } else if (this.#modifier < 0) {
+      output += ` - ${Math.abs(this.#modifier)}`;
+    }
+
     output += ` = ${total}`;
 
     return { total, output };
