@@ -1,7 +1,7 @@
 import type { App } from 'obsidian';
 import type DiceRollerPlugin from '@/main';
 import { RollModal } from '@/ui/roll-modal';
-import { VALID_SIDES } from '@/dice/parser';
+import { DICE_SIDES } from '@/dice/registry';
 
 export function registerCommands(plugin: DiceRollerPlugin, app: App): void {
   plugin.addCommand({
@@ -14,7 +14,7 @@ export function registerCommands(plugin: DiceRollerPlugin, app: App): void {
     },
   });
 
-  for (const n of VALID_SIDES) {
+  for (const n of DICE_SIDES) {
     plugin.addCommand({
       id: `roll-d${n}`,
       name: `Roll d${n}`,

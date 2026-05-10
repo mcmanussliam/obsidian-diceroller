@@ -1,6 +1,7 @@
 import { Notice } from 'obsidian';
 import type { DiceRollerSettings } from '@/plugin/settings';
-import { clampSides, parseDice, type ParsedDice, type DieSides } from '@/dice/parser';
+import { parseDice, type ParsedDice } from '@/dice/parser';
+import { clampSides, type DieSides } from '@/dice/registry';
 import { AnimationController } from '@/scene/animation';
 import { DiceFactory, type DieObject } from '@/dice/factory';
 import { PhysicsWorld } from '@/scene/physics';

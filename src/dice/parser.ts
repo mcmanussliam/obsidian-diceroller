@@ -1,4 +1,5 @@
 import { DiceRoll } from 'rpg-dice-roller';
+export { DICE_SIDES, DieSides, clampSides } from '@/dice/registry';
 
 export interface DiceGroup {
   /** Number of dice to roll. */
@@ -68,12 +69,4 @@ export function validateNotation(notation: string): boolean {
   } catch {
     return false;
   }
-}
-
-export const VALID_SIDES = [4, 6, 8, 10, 12, 20, 100] as const;
-export type DieSides = (typeof VALID_SIDES)[number];
-
-export function clampSides(sides: number): DieSides {
-  const sorted = [...VALID_SIDES].sort((a, b) => Math.abs(a - sides) - Math.abs(b - sides));
-  return sorted[0];
 }

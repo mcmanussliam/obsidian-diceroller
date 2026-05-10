@@ -1,53 +1,11 @@
 import type * as THREE from 'three';
-import type { DieSides } from '@/dice/parser';
-
-const OPPOSITE_SUMS: Partial<Record<DieSides, number>> = {
-  6: 7,
-  8: 9,
-  12: 13,
-  20: 21,
-};
-
-/**
- * Returns the string label shown on each face index, following standard
- * physical die conventions (opposite faces sum to N, top face = lowest number).
- *
- * faceNormals must be in the same order as returned by buildFaceUVs.
- */
-export function assignFaceNumbers(
-  sides: DieSides,
-  faceNormals: readonly THREE.Vector3[]
-): string[] {
-  if (sides === 4) {
-    return assignSequential(faceNormals, (i) => String(i + 1));
-  }
-
-  if (sides === 10) {
-    return assignByYThenAzimuth(faceNormals, (rank, total) =>
-      rank === total - 1 ? '0' : String(rank + 1)
-    );
-  }
-
-  if (sides === 100) {
-    return assignByYThenAzimuth(faceNormals, (rank, total) =>
-      rank === total - 1 ? '00' : String((rank + 1) * 10)
-    );
-  }
-
-  const oppositeSum = OPPOSITE_SUMS[sides];
-  if (oppositeSum !== undefined) {
-    return assignOpposites(faceNormals, oppositeSum);
-  }
-
-  return assignSequential(faceNormals, (i) => String(i + 1));
-}
 
 /**
  * For d4: returns a map from global vertex ID to the number shown at that vertex.
  *
  * On a physical d4 the number at each corner equals the number of the face
- * opposite to that corner.  faceLabels[f] must already be set (call
- * assignFaceNumbers first).
+ * opposite to that corner. faceLabels[f] must already be set (call
+ * assignLabels from the registry entry first).
  */
 export function buildD4VertexMap(
   faceLabels: readonly string[],
@@ -67,20 +25,7 @@ export function buildD4VertexMap(
   return map;
 }
 
-/** Converts a face label string back to a numeric result value. */
-export function labelToResult(label: string, sides: DieSides): number {
-  if (sides === 10) {
-    return label === '0' ? 10 : Number.parseInt(label, 10);
-  }
-
-  if (sides === 100) {
-    return label === '00' ? 100 : Number.parseInt(label, 10);
-  }
-
-  return Number.parseInt(label, 10);
-}
-
-function assignSequential(
+export function assignSequential(
   faceNormals: readonly THREE.Vector3[],
   label: (rank: number) => string
 ): string[] {
@@ -94,7 +39,7 @@ function assignSequential(
   return labels;
 }
 
-function assignByYThenAzimuth(
+export function assignByYThenAzimuth(
   faceNormals: readonly THREE.Vector3[],
   label: (rank: number, total: number) => string
 ): string[] {
@@ -120,7 +65,7 @@ function assignByYThenAzimuth(
   return labels;
 }
 
-function assignOpposites(faceNormals: readonly THREE.Vector3[], oppositeSum: number): string[] {
+export function assignOpposites(faceNormals: readonly THREE.Vector3[], oppositeSum: number): string[] {
   const n = faceNormals.length;
   const labels = new Array<string>(n).fill('');
   const paired = new Array<boolean>(n).fill(false);

@@ -1,12 +1,11 @@
 import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
-import { clampSides, type DieSides } from '@/dice/parser';
+import { type DieSides, DICE_REGISTRY, type DieDefinition } from '@/dice/registry';
 import { isDark } from '@/utils/color';
 import { geomToConvex } from '@/utils/cannon-bridge';
-import { DecagonGeometry } from '@/dice/geometry/decagon';
 import type { GroundBounds } from '@/scene/physics';
 import { buildFaceUVs, applyUVArray, type FaceData } from '@/dice/faces/uv';
-import { assignFaceNumbers, buildD4VertexMap, labelToResult } from '@/dice/faces/numbers';
+import { buildD4VertexMap } from '@/dice/faces/numbers';
 import { generateFaceTexture } from '@/dice/faces/texture';
 import { DEFAULT_THEME, type DieTheme } from '@/dice/theme';
 
@@ -48,13 +47,9 @@ interface FaceInfo {
 
 export class DiceFactory {
   readonly #physicsMaterial: CANNON.Material;
-
   readonly #physicsGeoCache = new Map<DieSides, THREE.BufferGeometry>();
-
   readonly #faceInfoCache = new Map<DieSides, FaceInfo>();
-
   readonly #bounds: GroundBounds;
-
   readonly #theme: DieTheme;
 
   public constructor(
@@ -68,55 +63,47 @@ export class DiceFactory {
   }
 
   public createDie(sides: DieSides): DieObject {
-    const s = clampSides(sides);
-    const physicsGeo = this.#getPhysicsGeo(s);
-    const faceInfo = this.#getFaceInfo(s, physicsGeo);
-    const mesh = this.#buildMesh(s, physicsGeo, faceInfo);
+    const def = DICE_REGISTRY[sides];
+    const physicsGeo = this.#getPhysicsGeo(def);
+    const faceInfo = this.#getFaceInfo(def, physicsGeo);
+    const mesh = this.#buildMesh(def, physicsGeo, faceInfo);
     const body = this.#buildBody(physicsGeo);
 
     const { faceLabels, faceData } = faceInfo;
-    const isD4 = s === 4;
 
-    /**
-     * Reads the rolled value by finding the face whose world-space normal
-     * points most directly upward after the mesh has settled.
-     * d4 is inverted — the result is on the bottom face (lowest Y normal).
-     */
     const readResult = (m: THREE.Mesh): number => {
       const { faceNormals } = faceData;
       let bestIdx = 0;
-      let bestY = isD4 ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
+      let bestY = def.vertexLabels ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
 
       for (let i = 0; i < faceNormals.length; i++) {
         const wy = faceNormals[i].clone().applyQuaternion(m.quaternion).y;
-        if (isD4 ? wy < bestY : wy > bestY) {
+        if (def.vertexLabels ? wy < bestY : wy > bestY) {
           bestY = wy;
           bestIdx = i;
         }
       }
 
-      return labelToResult(faceLabels[bestIdx], s);
+      return def.readResult(faceLabels[bestIdx]);
     };
 
-    return { mesh, body, sides: s, faceData, faceLabels, readResult };
+    return { mesh, body, sides, faceData, faceLabels, readResult };
   }
 
   public dispose(): void {
     for (const geo of this.#physicsGeoCache.values()) {
       geo.dispose();
     }
-
     this.#physicsGeoCache.clear();
 
     for (const { texture } of this.#faceInfoCache.values()) {
       texture.dispose();
     }
-
     this.#faceInfoCache.clear();
   }
 
-  #getFaceInfo(sides: DieSides, physicsGeo: THREE.BufferGeometry): FaceInfo {
-    const cached = this.#faceInfoCache.get(sides);
+  #getFaceInfo(def: DieDefinition, physicsGeo: THREE.BufferGeometry): FaceInfo {
+    const cached = this.#faceInfoCache.get(def.sides);
     if (cached) {
       return cached;
     }
@@ -126,27 +113,29 @@ export class DiceFactory {
     const { faceData, uvArray } = buildFaceUVs(tempGeo);
     tempGeo.dispose();
 
-    const faceLabels = assignFaceNumbers(sides, faceData.faceNormals);
-    const d4VertexMap =
-      sides === 4 ? buildD4VertexMap(faceLabels, faceData.faceVertexIds) : undefined;
+    const faceLabels = def.assignLabels(faceData.faceNormals);
+    const d4VertexMap = def.vertexLabels
+      ? buildD4VertexMap(faceLabels, faceData.faceVertexIds)
+      : undefined;
+
     const texture = generateFaceTexture(
       faceLabels,
-      this.#theme.colors[sides],
+      this.#theme.colors[def.sides],
       faceData.faceCentroids,
       faceData.faceVertexPixels,
       faceData.faceVertexIds,
-      sides,
+      def.vertexLabels,
       this.#theme.font,
       d4VertexMap
     );
 
     const info: FaceInfo = { faceData, faceLabels, uvArray, texture };
-    this.#faceInfoCache.set(sides, info);
+    this.#faceInfoCache.set(def.sides, info);
     return info;
   }
 
-  #buildMesh(sides: DieSides, physicsGeo: THREE.BufferGeometry, faceInfo: FaceInfo): THREE.Mesh {
-    const color = this.#theme.colors[sides];
+  #buildMesh(def: DieDefinition, physicsGeo: THREE.BufferGeometry, faceInfo: FaceInfo): THREE.Mesh {
+    const color = this.#theme.colors[def.sides];
     const edgeColor = isDark(color) ? 0xffffff : 0x000000;
 
     const visualGeo = physicsGeo.toNonIndexed();
@@ -169,6 +158,7 @@ export class DiceFactory {
       transparent: true,
       opacity: Magics.EDGE_OPACITY,
     });
+
     mesh.add(new THREE.LineSegments(edgesGeo, edgeMat));
 
     return mesh;
@@ -193,8 +183,10 @@ export class DiceFactory {
 
     const { minX, maxX, minZ, maxZ } = this.#bounds;
 
-    const spawnX = maxX * Magics.SPAWN_CORNER_FACTOR + (Math.random() - 0.5) * Magics.SPAWN_SCATTER;
-    const spawnZ = maxZ * Magics.SPAWN_CORNER_FACTOR + (Math.random() - 0.5) * Magics.SPAWN_SCATTER;
+    const spawnX =
+      maxX * Magics.SPAWN_CORNER_FACTOR + (Math.random() - 0.5) * Magics.SPAWN_SCATTER;
+    const spawnZ =
+      maxZ * Magics.SPAWN_CORNER_FACTOR + (Math.random() - 0.5) * Magics.SPAWN_SCATTER;
     const spawnY = Magics.SPAWN_HEIGHT + Math.random() * Magics.SPAWN_HEIGHT_RAND;
     body.position.set(spawnX, spawnY, spawnZ);
 
@@ -220,33 +212,13 @@ export class DiceFactory {
     return body;
   }
 
-  #getPhysicsGeo(sides: DieSides): THREE.BufferGeometry {
-    const cached = this.#physicsGeoCache.get(sides);
+  #getPhysicsGeo(def: DieDefinition): THREE.BufferGeometry {
+    const cached = this.#physicsGeoCache.get(def.sides);
     if (cached) {
       return cached;
     }
-
-    const geo = buildGeometry(sides);
-    this.#physicsGeoCache.set(sides, geo);
+    const geo = def.buildGeometry(Magics.DIE_RADIUS);
+    this.#physicsGeoCache.set(def.sides, geo);
     return geo;
-  }
-}
-
-function buildGeometry(sides: DieSides): THREE.BufferGeometry {
-  switch (sides) {
-    case 4:
-      return new THREE.TetrahedronGeometry(Magics.DIE_RADIUS);
-    case 6:
-      return new THREE.BoxGeometry(1, 1, 1);
-    case 8:
-      return new THREE.OctahedronGeometry(Magics.DIE_RADIUS);
-    case 10:
-      return new DecagonGeometry(Magics.DIE_RADIUS);
-    case 12:
-      return new THREE.DodecahedronGeometry(Magics.DIE_RADIUS);
-    case 20:
-      return new THREE.IcosahedronGeometry(Magics.DIE_RADIUS);
-    case 100:
-      return new DecagonGeometry(Magics.DIE_RADIUS);
   }
 }

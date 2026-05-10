@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import type { DieSides } from '@/dice/parser';
 import { hexToRGBString, autoContrast } from '@/utils/color';
 import { CELL_SIZE } from '@/dice/faces/uv';
 
@@ -7,8 +6,8 @@ import { CELL_SIZE } from '@/dice/faces/uv';
  * Draws all face labels into a canvas texture atlas — one cell per face.
  * The cell layout matches the UV atlas written by buildFaceUVs.
  *
- * For d4, draws a different number at each corner: the number of the vertex at
- * that corner (which equals the number of the face opposite to that corner),
+ * When vertexLabels is true (d4), draws a different number at each corner:
+ * the number of the vertex at that corner (= the face opposite to it),
  * matching real physical d4 dice.  Requires d4VertexMap and faceVertexIds.
  *
  * For all other dice, draws the label at the geometric centroid of each face.
@@ -19,7 +18,7 @@ export function generateFaceTexture(
   faceCentroids: readonly { cx: number; cy: number }[],
   faceVertexPixels: readonly (readonly { cx: number; cy: number }[])[],
   faceVertexIds: readonly (readonly number[])[],
-  sides: DieSides,
+  vertexLabels: boolean,
   font: string,
   d4VertexMap?: Map<number, number>
 ): THREE.CanvasTexture {
@@ -49,7 +48,7 @@ export function generateFaceTexture(
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    if (sides === 4 && d4VertexMap) {
+    if (vertexLabels && d4VertexMap) {
       // Each corner shows the number of the vertex at that corner (= opposite face number).
       const cornerFontSize = Math.round(CELL_SIZE * 0.2);
       ctx.font = `bold ${cornerFontSize}px ${font}`;
@@ -60,11 +59,11 @@ export function generateFaceTexture(
       for (let c = 0; c < corners.length; c++) {
         const corner = corners[c];
         const num = d4VertexMap.get(vertexIds[c]) ?? '';
+        // Nudge 35% toward centroid so the number sits inside the triangle.
         const cx = corner.cx + (centroid.cx - corner.cx) * 0.35;
         const cy = corner.cy + (centroid.cy - corner.cy) * 0.35;
         ctx.fillText(String(num), x + cx, y + cy);
       }
-
     } else {
       const label = faceLabels[i];
       const fontSize =
