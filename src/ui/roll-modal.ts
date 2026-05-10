@@ -28,6 +28,7 @@ export class RollModal extends Modal {
 
     new Setting(contentEl).setName('Notation').addText((text) => {
       text
+        // eslint-disable-next-line obsidianmd/ui/sentence-case
         .setPlaceholder('2d6+3')
         .setValue(this.#notation)
         .onChange((value) => {
@@ -39,7 +40,7 @@ export class RollModal extends Modal {
         if (e.key === 'Enter') this.#submit();
       });
 
-      setTimeout(() => text.inputEl.focus(), FOCUS_DELAY_MS);
+      activeWindow.setTimeout(() => text.inputEl.focus(), FOCUS_DELAY_MS);
     });
 
     this.#errorEl = contentEl.createEl('p', {
@@ -55,7 +56,7 @@ export class RollModal extends Modal {
     );
 
     const quickPick = contentEl.createDiv({ cls: 'dice-roller-modal__quickpick' });
-    quickPick.createEl('span', { text: 'Quick roll:' });
+    quickPick.createSpan({ text: 'Quick roll:' });
 
     for (const pick of QUICK_PICKS) {
       quickPick
