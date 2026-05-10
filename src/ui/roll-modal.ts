@@ -28,7 +28,6 @@ export class RollModal extends Modal {
 
     new Setting(contentEl).setName('Notation').addText((text) => {
       text
-        // eslint-disable-next-line obsidianmd/ui/sentence-case
         .setPlaceholder('2d6+3')
         .setValue(this.#notation)
         .onChange((value) => {

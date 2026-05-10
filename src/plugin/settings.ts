@@ -1,21 +1,19 @@
 import { type App, PluginSettingTab, Setting } from 'obsidian';
 import type DiceRollerPlugin from '@/main';
+import { SKIN_REGISTRY } from '@/dice/skin/registry';
 
 export interface DiceRollerSettings {
-  /** Maximum seconds before dice are force-settled regardless of motion. */
   animationDuration: number;
-
-  /** Seconds the result card remains visible before fading out. */
   resultDisplayDuration: number;
-
-  /** Shadow-map resolution tier — higher costs more GPU. */
   shadowQuality: 'low' | 'medium' | 'high';
+  activeSkinId: string;
 }
 
 export const DEFAULT_SETTINGS: DiceRollerSettings = {
   animationDuration: 8,
   resultDisplayDuration: 3,
   shadowQuality: 'medium',
+  activeSkinId: 'default',
 };
 
 export class DiceRollerSettingTab extends PluginSettingTab {
@@ -29,6 +27,21 @@ export class DiceRollerSettingTab extends PluginSettingTab {
   public display(): void {
     const { containerEl } = this;
     containerEl.empty();
+
+    new Setting(containerEl)
+      .setName('Dice skin')
+      .setDesc(
+        'Visual style applied to all dice rolls. Drop skin folders into dice-skins/ at your vault root to add more.'
+      )
+      .addDropdown((drop) => {
+        for (const skin of SKIN_REGISTRY.list()) {
+          drop.addOption(skin.id, skin.name);
+        }
+        drop.setValue(this.plugin.settings.activeSkinId).onChange(async (value) => {
+          this.plugin.settings.activeSkinId = value;
+          await this.plugin.saveSettings();
+        });
+      });
 
     new Setting(containerEl)
       .setName('Max animation duration')

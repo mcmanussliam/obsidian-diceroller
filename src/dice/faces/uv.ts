@@ -16,6 +16,14 @@ export interface FaceData {
   readonly globalVertexPositions: readonly THREE.Vector3[];
 }
 
+export interface FaceLayout {
+  readonly faceData: FaceData;
+
+  readonly faceLabels: readonly string[];
+
+  readonly uvArray: Float32Array;
+}
+
 const PADDING = 0.12;
 export const CELL_SIZE = 256;
 

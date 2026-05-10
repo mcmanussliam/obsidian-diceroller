@@ -65,7 +65,10 @@ export function assignByYThenAzimuth(
   return labels;
 }
 
-export function assignOpposites(faceNormals: readonly THREE.Vector3[], oppositeSum: number): string[] {
+export function assignOpposites(
+  faceNormals: readonly THREE.Vector3[],
+  oppositeSum: number
+): string[] {
   const n = faceNormals.length;
   const labels = new Array<string>(n).fill('');
   const paired = new Array<boolean>(n).fill(false);

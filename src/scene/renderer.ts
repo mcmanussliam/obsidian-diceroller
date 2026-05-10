@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import type { DiceRollerSettings } from '@/plugin/settings';
 
 const Magics = {
@@ -69,6 +70,10 @@ export class Renderer {
     this.#threeRenderer.toneMappingExposure = Magics.TONE_MAPPING_EXPOSURE;
 
     container.appendChild(this.#threeRenderer.domElement);
+
+    const pmrem = new THREE.PMREMGenerator(this.#threeRenderer);
+    this.scene.environment = pmrem.fromScene(new RoomEnvironment()).texture;
+    pmrem.dispose();
 
     this.#setupLights(shadowQuality);
     this.#setupShadowPlane();

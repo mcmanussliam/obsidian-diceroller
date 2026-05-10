@@ -1,3 +1,4 @@
+import * as CANNON from 'cannon-es';
 import { Notice } from 'obsidian';
 import type { DiceRollerSettings } from '@/plugin/settings';
 import { parseDice, type ParsedDice } from '@/dice/parser';
@@ -6,15 +7,31 @@ import { AnimationController } from '@/scene/animation';
 import { DiceFactory, type DieObject } from '@/dice/factory';
 import { PhysicsWorld } from '@/scene/physics';
 import { Renderer } from '@/scene/renderer';
+import { SKIN_REGISTRY } from '@/dice/skin/registry';
+import type { DiceSkinHandler } from '@/dice/skin/definition';
+import { DiceSoundPlayer, collisionGain } from '@/audio/sound-player';
 
 const Magics = {
   FADE_DURATION_MS: 350,
   TEARDOWN_EXTRA_MS: 600,
   ROLL_DEBOUNCE_MS: 1000,
+  MIN_COLLISION_VELOCITY: 1.5,
 } as const;
+
+type CollideEvent = {
+  contact: { getImpactVelocityAlongNormal(): number };
+};
 
 export class DiceOverlay {
   readonly #settings: DiceRollerSettings;
+
+  readonly #skinHandler: DiceSkinHandler;
+
+  readonly #soundPlayer: DiceSoundPlayer | null;
+
+  readonly #preloadPromise: Promise<void>;
+
+  #preloadDone = false;
 
   #overlayEl: HTMLElement | null = null;
 
@@ -38,6 +55,11 @@ export class DiceOverlay {
 
   public constructor(settings: DiceRollerSettings) {
     this.#settings = settings;
+    this.#skinHandler = SKIN_REGISTRY.getOrDefault(settings.activeSkinId);
+    this.#soundPlayer = this.#skinHandler.definition.sounds ? new DiceSoundPlayer() : null;
+    this.#preloadPromise = this.#skinHandler.preload().then(() => {
+      this.#preloadDone = true;
+    });
   }
 
   public roll(notation: string): void {
@@ -45,29 +67,15 @@ export class DiceOverlay {
       if (Date.now() - this.#rollStartTime < Magics.ROLL_DEBOUNCE_MS) {
         return;
       }
-
       this.destroy();
     }
 
-    this.#rollStartTime = Date.now();
-
-    const parsed = parseDice(notation);
-    if (parsed.groups.length === 0) {
+    if (!this.#preloadDone) {
+      void this.#preloadPromise.then(() => this.#doRoll(notation));
       return;
     }
 
-    this.#build();
-    this.#spawnDice(parsed);
-    this.#fadeIn();
-
-    this.#animation?.start(() => {
-      if (!this.#active) {
-        return;
-      }
-
-      const { total, output } = this.#computeResults();
-      this.#onSettled(total, output);
-    });
+    this.#doRoll(notation);
   }
 
   public destroy(): void {
@@ -96,12 +104,39 @@ export class DiceOverlay {
     this.#active = false;
   }
 
+  public disposeAll(): void {
+    this.destroy();
+    this.#skinHandler.dispose();
+    this.#soundPlayer?.dispose();
+  }
+
+  #doRoll(notation: string): void {
+    const parsed = parseDice(notation);
+    if (parsed.groups.length === 0) {
+      return;
+    }
+
+    this.#rollStartTime = Date.now();
+    this.#build();
+    this.#spawnDice(parsed);
+    this.#fadeIn();
+
+    this.#animation?.start(() => {
+      if (!this.#active) {
+        return;
+      }
+
+      const { total, output } = this.#computeResults();
+      this.#onSettled(total, output);
+    });
+  }
+
   #build(): void {
     this.#overlayEl = activeDocument.body.createDiv({ cls: 'dice-overlay dice-overlay--hidden' });
     this.#renderer = new Renderer(this.#overlayEl, this.#settings.shadowQuality);
     const bounds = this.#renderer.getGroundBounds();
     this.#physics = new PhysicsWorld(bounds);
-    this.#factory = new DiceFactory(this.#physics.dicePhysicsMaterial, bounds);
+    this.#factory = new DiceFactory(this.#physics.dicePhysicsMaterial, bounds, this.#skinHandler);
     this.#active = true;
   }
 
@@ -118,6 +153,7 @@ export class DiceOverlay {
         const die = this.#factory.createDie(group.sides);
         this.#physics.addBody(die.body);
         this.#renderer.scene.add(die.mesh);
+        this.#registerCollisionSound(die.body);
         this.#dice.push(die);
       }
     }
@@ -130,6 +166,23 @@ export class DiceOverlay {
     );
   }
 
+  #registerCollisionSound(body: CANNON.Body): void {
+    const buffer = this.#skinHandler.getSound('collision');
+    if (!buffer || !this.#soundPlayer) {
+      return;
+    }
+
+    const player = this.#soundPlayer;
+
+    body.addEventListener('collide', (e: unknown) => {
+      const event = e as CollideEvent;
+      const velocity = Math.abs(event.contact.getImpactVelocityAlongNormal());
+      if (velocity > Magics.MIN_COLLISION_VELOCITY) {
+        player.play(buffer, collisionGain(velocity));
+      }
+    });
+  }
+
   #computeResults(): { total: number; output: string } {
     let dieIdx = 0;
     let diceTotal = 0;
@@ -139,12 +192,15 @@ export class DiceOverlay {
       const values: number[] = [];
       for (let i = 0; i < group.count; i++) {
         const die = this.#dice[dieIdx++];
-        if (die) {
-          const value = die.readResult(die.mesh);
-          values.push(value);
-          diceTotal += value;
+        if (!die) {
+          continue;
         }
+
+        const value = die.readResult(die.mesh);
+        values.push(value);
+        diceTotal += value;
       }
+
       parts.push(`${group.count}d${group.sides}: [${values.join(', ')}]`);
     }
 
@@ -158,11 +214,13 @@ export class DiceOverlay {
     }
 
     output += ` = ${total}`;
-
     return { total, output };
   }
 
   #onSettled(total: number, output: string): void {
+    const resultBuffer = this.#skinHandler.getSound('result');
+    if (resultBuffer) this.#soundPlayer?.play(resultBuffer);
+
     const fragment = new DocumentFragment();
     fragment.createDiv({ cls: 'dice-notice__total', text: String(total) });
     fragment.createDiv({ cls: 'dice-notice__breakdown', text: output });
@@ -177,6 +235,7 @@ export class DiceOverlay {
     if (!this.#overlayEl) {
       return;
     }
+
     this.#overlayEl.removeClass('dice-overlay--hidden');
     this.#overlayEl.addClass('dice-overlay--visible');
   }
