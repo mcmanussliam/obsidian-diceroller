@@ -26,9 +26,7 @@ export function generateFaceTexture(
   const cols = Math.ceil(Math.sqrt(n));
   const rows = Math.ceil(n / cols);
 
-  const canvas = activeDocument.createEl('canvas');
-  canvas.width = cols * CELL_SIZE;
-  canvas.height = rows * CELL_SIZE;
+  const canvas = new OffscreenCanvas(cols * CELL_SIZE, rows * CELL_SIZE);
   const ctx = canvas.getContext('2d');
   if (!ctx) {
     throw new Error('Could not get 2d canvas context');
