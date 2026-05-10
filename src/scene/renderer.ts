@@ -8,12 +8,14 @@ const Magics = {
   CAMERA_FAR: 100,
   CAMERA_POS_Y: 20,
   MAX_PIXEL_RATIO: 2,
-  TONE_MAPPING_EXPOSURE: 1.2,
-  AMBIENT_INTENSITY: 0.5,
+  TONE_MAPPING_EXPOSURE: 1.4,
+  AMBIENT_INTENSITY: 1.8,
   KEY_LIGHT_COLOR: 0xfff5e0,
   KEY_LIGHT_INTENSITY: 1.4,
-  FILL_LIGHT_INTENSITY: 0.6,
+  FILL_LIGHT_INTENSITY: 1.2,
   FILL_LIGHT_RANGE: 30,
+  UNDER_FILL_INTENSITY: 0.8,
+  UNDER_FILL_RANGE: 30,
   RIM_LIGHT_COLOR: 0xccddff,
   RIM_LIGHT_INTENSITY: 0.3,
   SHADOW_NEAR: 0.5,
@@ -66,7 +68,7 @@ export class Renderer {
     this.#threeRenderer.shadowMap.enabled = true;
     this.#threeRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.#threeRenderer.setClearColor(0x000000, 0);
-    this.#threeRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.#threeRenderer.toneMapping = THREE.ReinhardToneMapping;
     this.#threeRenderer.toneMappingExposure = Magics.TONE_MAPPING_EXPOSURE;
 
     container.appendChild(this.#threeRenderer.domElement);
@@ -159,6 +161,14 @@ export class Renderer {
     );
     fill.position.set(-8, 7, -3);
     this.scene.add(fill);
+
+    const underFill = new THREE.PointLight(
+      0x99aabb,
+      Magics.UNDER_FILL_INTENSITY,
+      Magics.UNDER_FILL_RANGE
+    );
+    underFill.position.set(0, -5, 0);
+    this.scene.add(underFill);
 
     const rim = new THREE.DirectionalLight(Magics.RIM_LIGHT_COLOR, Magics.RIM_LIGHT_INTENSITY);
     rim.position.set(-5, 8, -8);
