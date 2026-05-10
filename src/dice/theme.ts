@@ -1,8 +1,9 @@
-import type { DieSides } from '@/lib/parser/dice-parser';
+import type { DieSides } from '@/dice/parser';
 
 export interface DieTheme {
   /** Face background color per die type. */
   readonly colors: Record<DieSides, number>;
+
   /** CSS font family used for face labels (size is computed per-face). */
   readonly font: string;
 }

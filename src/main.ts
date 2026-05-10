@@ -4,9 +4,9 @@ import {
   DEFAULT_SETTINGS,
   DiceRollerSettingTab,
   type DiceRollerSettings,
-} from '@/lib/settings/plugin-settings';
-import { registerCommands } from '@/lib/register-commands';
-import { DiceOverlay } from '@/lib/overlay/dice-overlay';
+} from '@/plugin/settings';
+import { registerCommands } from '@/plugin/commands';
+import { DiceOverlay } from '@/dice/overlay';
 
 export default class DiceRollerPlugin extends Plugin {
   public settings!: DiceRollerSettings;
@@ -26,7 +26,11 @@ export default class DiceRollerPlugin extends Plugin {
   }
 
   public async loadSettings(): Promise<void> {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    this.settings = Object.assign(
+      {},
+      DEFAULT_SETTINGS,
+      (await this.loadData()) as Partial<DiceRollerSettings>
+    );
   }
 
   public async saveSettings(): Promise<void> {

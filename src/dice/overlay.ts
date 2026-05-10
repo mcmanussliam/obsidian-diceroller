@@ -1,29 +1,38 @@
 import { Notice } from 'obsidian';
-import type { DiceRollerSettings } from '@/lib/settings/plugin-settings';
-import { clampSides, parseDice, type ParsedDice, type DieSides } from '@/lib/parser/dice-parser';
-import { AnimationController } from '@/lib/overlay/animation-controller';
-import { DiceFactory, type DieObject } from '@/lib/overlay/dice-factory';
-import { PhysicsWorld } from '@/lib/overlay/physics-world';
-import { Renderer } from '@/lib/overlay/renderer';
+import type { DiceRollerSettings } from '@/plugin/settings';
+import { clampSides, parseDice, type ParsedDice, type DieSides } from '@/dice/parser';
+import { AnimationController } from '@/scene/animation';
+import { DiceFactory, type DieObject } from '@/dice/factory';
+import { PhysicsWorld } from '@/scene/physics';
+import { Renderer } from '@/scene/renderer';
 
-enum Magics {
-  FADE_DURATION_MS = 350,
-  TEARDOWN_EXTRA_MS = 600,
-  ROLL_DEBOUNCE_MS = 1000,
-}
+const Magics = {
+  FADE_DURATION_MS: 350,
+  TEARDOWN_EXTRA_MS: 600,
+  ROLL_DEBOUNCE_MS: 1000,
+} as const;
 
 export class DiceOverlay {
   readonly #settings: DiceRollerSettings;
 
   #overlayEl: HTMLElement | null = null;
+
   #renderer: Renderer | null = null;
+
   #physics: PhysicsWorld | null = null;
+
   #factory: DiceFactory | null = null;
+
   #animation: AnimationController | null = null;
+
   #dice: DieObject[] = [];
+
   #diceGroups: { sides: DieSides; count: number }[] = [];
+
   #modifier = 0;
+
   #active = false;
+
   #rollStartTime = 0;
 
   public constructor(settings: DiceRollerSettings) {
@@ -64,6 +73,7 @@ export class DiceOverlay {
     for (const die of this.#dice) {
       this.#physics?.removeBody(die.body);
     }
+
     this.#dice = [];
     this.#diceGroups = [];
 
@@ -81,7 +91,7 @@ export class DiceOverlay {
   }
 
   #build(): void {
-    this.#overlayEl = document.body.createDiv({ cls: 'dice-overlay dice-overlay--hidden' });
+    this.#overlayEl = activeDocument.body.createDiv({ cls: 'dice-overlay dice-overlay--hidden' });
     this.#renderer = new Renderer(this.#overlayEl, this.#settings.shadowQuality);
     const bounds = this.#renderer.getGroundBounds();
     this.#physics = new PhysicsWorld(bounds);
@@ -143,11 +153,11 @@ export class DiceOverlay {
 
   #onSettled(total: number, output: string): void {
     const fragment = new DocumentFragment();
-    fragment.createEl('div', { cls: 'dice-notice__total', text: String(total) });
-    fragment.createEl('div', { cls: 'dice-notice__breakdown', text: output });
+    fragment.createDiv({ cls: 'dice-notice__total', text: String(total) });
+    fragment.createDiv({ cls: 'dice-notice__breakdown', text: output });
     new Notice(fragment, this.#settings.resultDisplayDuration * 1000);
 
-    setTimeout(() => {
+    activeWindow.setTimeout(() => {
       this.#fadeOut(() => this.destroy());
     }, Magics.TEARDOWN_EXTRA_MS);
   }
@@ -167,6 +177,6 @@ export class DiceOverlay {
     }
     this.#overlayEl.removeClass('dice-overlay--visible');
     this.#overlayEl.addClass('dice-overlay--fading');
-    setTimeout(() => cb?.(), Magics.FADE_DURATION_MS);
+    activeWindow.setTimeout(() => cb?.(), Magics.FADE_DURATION_MS);
   }
 }

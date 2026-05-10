@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import type { DieSides } from '@/lib/parser/dice-parser';
+import type { DieSides } from '@/dice/parser';
 import { hexToRGBString, autoContrast } from '@/utils/color';
-import { CELL_SIZE } from '@/lib/overlay/face-uv';
+import { CELL_SIZE } from '@/dice/faces/uv';
 
 /**
  * Draws all face labels into a canvas texture atlas — one cell per face.
@@ -27,7 +27,7 @@ export function generateFaceTexture(
   const cols = Math.ceil(Math.sqrt(n));
   const rows = Math.ceil(n / cols);
 
-  const canvas = document.createElement('canvas');
+  const canvas = activeDocument.createEl('canvas');
   canvas.width = cols * CELL_SIZE;
   canvas.height = rows * CELL_SIZE;
   const ctx = canvas.getContext('2d');
@@ -60,11 +60,11 @@ export function generateFaceTexture(
       for (let c = 0; c < corners.length; c++) {
         const corner = corners[c];
         const num = d4VertexMap.get(vertexIds[c]) ?? '';
-        // Nudge 35% toward centroid so the number sits inside the triangle.
         const cx = corner.cx + (centroid.cx - corner.cx) * 0.35;
         const cy = corner.cy + (centroid.cy - corner.cy) * 0.35;
         ctx.fillText(String(num), x + cx, y + cy);
       }
+
     } else {
       const label = faceLabels[i];
       const fontSize =

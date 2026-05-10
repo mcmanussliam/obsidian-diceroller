@@ -1,39 +1,34 @@
 import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
-import { clampSides, type DieSides } from '@/lib/parser/dice-parser';
+import { clampSides, type DieSides } from '@/dice/parser';
 import { isDark } from '@/utils/color';
-import { geomToConvex } from '@/utils/three-utils';
-import { DecagonGeometry } from '@/lib/geometry/decagon-geometry';
-import type { GroundBounds } from '@/lib/overlay/physics-world';
-import { buildFaceUVs, applyUVArray, type FaceData } from '@/lib/overlay/face-uv';
-import { assignFaceNumbers, buildD4VertexMap, labelToResult } from '@/lib/overlay/face-numbers';
-import { generateFaceTexture } from '@/lib/overlay/face-texture';
-import { DEFAULT_THEME, type DieTheme } from '@/lib/theme/die-theme';
+import { geomToConvex } from '@/utils/cannon-bridge';
+import { DecagonGeometry } from '@/dice/geometry/decagon';
+import type { GroundBounds } from '@/scene/physics';
+import { buildFaceUVs, applyUVArray, type FaceData } from '@/dice/faces/uv';
+import { assignFaceNumbers, buildD4VertexMap, labelToResult } from '@/dice/faces/numbers';
+import { generateFaceTexture } from '@/dice/faces/texture';
+import { DEFAULT_THEME, type DieTheme } from '@/dice/theme';
 
-enum Magics {
-  DIE_RADIUS = 0.85,
-  FALLBACK_SPHERE_RADIUS = 0.65,
-
-  MATERIAL_ROUGHNESS = 0.35,
-  MATERIAL_METALNESS = 0.15,
-
-  EDGE_OPACITY = 0.55,
-  EDGE_THRESHOLD_ANGLE = 10,
-
-  LINEAR_DAMPING = 0.25,
-  ANGULAR_DAMPING = 0.25,
-  SLEEP_SPEED = 0.08,
-  SLEEP_TIME = 0.5,
-
-  SPAWN_HEIGHT = 9,
-  SPAWN_HEIGHT_RAND = 3,
-  SPAWN_CORNER_FACTOR = 0.82,
-  SPAWN_SCATTER = 2.5,
-
-  THROW_SPEED = 12,
-  THROW_VY = -2,
-  THROW_SPIN = 14,
-}
+const Magics = {
+  DIE_RADIUS: 0.85,
+  FALLBACK_SPHERE_RADIUS: 0.65,
+  MATERIAL_ROUGHNESS: 0.35,
+  MATERIAL_METALNESS: 0.15,
+  EDGE_OPACITY: 0.55,
+  EDGE_THRESHOLD_ANGLE: 10,
+  LINEAR_DAMPING: 0.25,
+  ANGULAR_DAMPING: 0.25,
+  SLEEP_SPEED: 0.08,
+  SLEEP_TIME: 0.5,
+  SPAWN_HEIGHT: 9,
+  SPAWN_HEIGHT_RAND: 3,
+  SPAWN_CORNER_FACTOR: 0.82,
+  SPAWN_SCATTER: 2.5,
+  THROW_SPEED: 12,
+  THROW_VY: -2,
+  THROW_SPIN: 14,
+} as const;
 
 export interface DieObject {
   readonly mesh: THREE.Mesh;
@@ -53,9 +48,13 @@ interface FaceInfo {
 
 export class DiceFactory {
   readonly #physicsMaterial: CANNON.Material;
+
   readonly #physicsGeoCache = new Map<DieSides, THREE.BufferGeometry>();
+
   readonly #faceInfoCache = new Map<DieSides, FaceInfo>();
+
   readonly #bounds: GroundBounds;
+
   readonly #theme: DieTheme;
 
   public constructor(
@@ -89,7 +88,7 @@ export class DiceFactory {
       let bestY = isD4 ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
 
       for (let i = 0; i < faceNormals.length; i++) {
-        const wy = (faceNormals[i] as THREE.Vector3).clone().applyQuaternion(m.quaternion).y;
+        const wy = faceNormals[i].clone().applyQuaternion(m.quaternion).y;
         if (isD4 ? wy < bestY : wy > bestY) {
           bestY = wy;
           bestIdx = i;
@@ -106,11 +105,13 @@ export class DiceFactory {
     for (const geo of this.#physicsGeoCache.values()) {
       geo.dispose();
     }
+
     this.#physicsGeoCache.clear();
 
     for (const { texture } of this.#faceInfoCache.values()) {
       texture.dispose();
     }
+
     this.#faceInfoCache.clear();
   }
 
@@ -224,6 +225,7 @@ export class DiceFactory {
     if (cached) {
       return cached;
     }
+
     const geo = buildGeometry(sides);
     this.#physicsGeoCache.set(sides, geo);
     return geo;

@@ -1,32 +1,28 @@
 import * as THREE from 'three';
-import type { DiceRollerSettings } from '@/lib/settings/plugin-settings';
+import type { DiceRollerSettings } from '@/plugin/settings';
 
-enum Magics {
-  CAMERA_FOV = 45,
-  CAMERA_NEAR = 0.1,
-  CAMERA_FAR = 100,
-  CAMERA_POS_Y = 20,
-
-  MAX_PIXEL_RATIO = 2,
-  TONE_MAPPING_EXPOSURE = 1.2,
-
-  AMBIENT_INTENSITY = 0.5,
-  KEY_LIGHT_COLOR = 0xfff5e0,
-  KEY_LIGHT_INTENSITY = 1.4,
-  FILL_LIGHT_INTENSITY = 0.6,
-  FILL_LIGHT_RANGE = 30,
-  RIM_LIGHT_COLOR = 0xccddff,
-  RIM_LIGHT_INTENSITY = 0.3,
-
-  SHADOW_NEAR = 0.5,
-  SHADOW_FAR = 40,
-  SHADOW_EXTENT = 12,
-  SHADOW_BIAS = -0.001,
-
-  SHADOW_PLANE_SIZE = 40,
-  SHADOW_PLANE_OPACITY = 0.25,
-  SHADOW_PLANE_Y = 0.01,
-}
+const Magics = {
+  CAMERA_FOV: 45,
+  CAMERA_NEAR: 0.1,
+  CAMERA_FAR: 100,
+  CAMERA_POS_Y: 20,
+  MAX_PIXEL_RATIO: 2,
+  TONE_MAPPING_EXPOSURE: 1.2,
+  AMBIENT_INTENSITY: 0.5,
+  KEY_LIGHT_COLOR: 0xfff5e0,
+  KEY_LIGHT_INTENSITY: 1.4,
+  FILL_LIGHT_INTENSITY: 0.6,
+  FILL_LIGHT_RANGE: 30,
+  RIM_LIGHT_COLOR: 0xccddff,
+  RIM_LIGHT_INTENSITY: 0.3,
+  SHADOW_NEAR: 0.5,
+  SHADOW_FAR: 40,
+  SHADOW_EXTENT: 12,
+  SHADOW_BIAS: -0.001,
+  SHADOW_PLANE_SIZE: 40,
+  SHADOW_PLANE_OPACITY: 0.25,
+  SHADOW_PLANE_Y: 0.01,
+} as const;
 
 const SHADOW_MAP_SIZES: Record<DiceRollerSettings['shadowQuality'], number> = {
   low: 512,
@@ -37,48 +33,50 @@ const SHADOW_MAP_SIZES: Record<DiceRollerSettings['shadowQuality'], number> = {
 export class Renderer {
   public readonly scene: THREE.Scene;
 
-  public readonly camera: THREE.PerspectiveCamera;
+  readonly #camera: THREE.PerspectiveCamera;
 
-  public readonly threeRenderer: THREE.WebGLRenderer;
+  readonly #threeRenderer: THREE.WebGLRenderer;
 
   readonly #onResize: () => void;
 
   public constructor(container: HTMLElement, shadowQuality: DiceRollerSettings['shadowQuality']) {
     this.scene = new THREE.Scene();
 
-    this.camera = new THREE.PerspectiveCamera(
+    this.#camera = new THREE.PerspectiveCamera(
       Magics.CAMERA_FOV,
       window.innerWidth / window.innerHeight,
       Magics.CAMERA_NEAR,
       Magics.CAMERA_FAR
     );
-    this.camera.position.set(0, Magics.CAMERA_POS_Y, 0);
-    this.camera.up.set(0, 0, -1);
-    this.camera.lookAt(0, 0, 0);
-    this.camera.updateMatrixWorld();
 
-    this.threeRenderer = new THREE.WebGLRenderer({
+    this.#camera.position.set(0, Magics.CAMERA_POS_Y, 0);
+    this.#camera.up.set(0, 0, -1);
+    this.#camera.lookAt(0, 0, 0);
+    this.#camera.updateMatrixWorld();
+
+    this.#threeRenderer = new THREE.WebGLRenderer({
       alpha: true,
       antialias: true,
       powerPreference: 'high-performance',
     });
-    this.threeRenderer.setSize(window.innerWidth, window.innerHeight);
-    this.threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio, Magics.MAX_PIXEL_RATIO));
-    this.threeRenderer.shadowMap.enabled = true;
-    this.threeRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.threeRenderer.setClearColor(0x000000, 0);
-    this.threeRenderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.threeRenderer.toneMappingExposure = Magics.TONE_MAPPING_EXPOSURE;
 
-    container.appendChild(this.threeRenderer.domElement);
+    this.#threeRenderer.setSize(window.innerWidth, window.innerHeight);
+    this.#threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio, Magics.MAX_PIXEL_RATIO));
+    this.#threeRenderer.shadowMap.enabled = true;
+    this.#threeRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.#threeRenderer.setClearColor(0x000000, 0);
+    this.#threeRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.#threeRenderer.toneMappingExposure = Magics.TONE_MAPPING_EXPOSURE;
+
+    container.appendChild(this.#threeRenderer.domElement);
 
     this.#setupLights(shadowQuality);
     this.#setupShadowPlane();
 
     this.#onResize = () => {
-      this.camera.aspect = window.innerWidth / window.innerHeight;
-      this.camera.updateProjectionMatrix();
-      this.threeRenderer.setSize(window.innerWidth, window.innerHeight);
+      this.#camera.aspect = window.innerWidth / window.innerHeight;
+      this.#camera.updateProjectionMatrix();
+      this.#threeRenderer.setSize(window.innerWidth, window.innerHeight);
     };
 
     window.addEventListener('resize', this.#onResize);
@@ -97,11 +95,11 @@ export class Renderer {
     const zs: number[] = [];
 
     for (const ndc of ndcCorners) {
-      const world = ndc.clone().unproject(this.camera);
-      const dir = world.sub(this.camera.position).normalize();
-      const t = -this.camera.position.y / dir.y;
-      xs.push(this.camera.position.x + t * dir.x);
-      zs.push(this.camera.position.z + t * dir.z);
+      const world = ndc.clone().unproject(this.#camera);
+      const dir = world.sub(this.#camera.position).normalize();
+      const t = -this.#camera.position.y / dir.y;
+      xs.push(this.#camera.position.x + t * dir.x);
+      zs.push(this.#camera.position.z + t * dir.z);
     }
 
     return {
@@ -113,24 +111,20 @@ export class Renderer {
   }
 
   public render(): void {
-    this.threeRenderer.render(this.scene, this.camera);
+    this.#threeRenderer.render(this.scene, this.#camera);
   }
 
   public dispose(): void {
     window.removeEventListener('resize', this.#onResize);
-    this.threeRenderer.dispose();
+    this.#threeRenderer.dispose();
 
     this.scene.traverse((obj) => {
       if (!(obj instanceof THREE.Mesh)) return;
-
-      obj.geometry.dispose();
-
-      if (Array.isArray(obj.material)) {
-        for (const m of obj.material) {
-          m.dispose();
-        }
-      } else {
-        obj.material.dispose();
+      const mesh = obj as THREE.Mesh<THREE.BufferGeometry, THREE.Material | THREE.Material[]>;
+      mesh.geometry.dispose();
+      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      for (const m of mats) {
+        m.dispose();
       }
     });
   }

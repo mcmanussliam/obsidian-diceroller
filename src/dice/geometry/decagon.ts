@@ -3,10 +3,10 @@ import * as THREE from 'three';
 export class DecagonGeometry extends THREE.BufferGeometry {
   public constructor(r: number) {
     super();
-    this.init(r);
+    this.#init(r);
   }
 
-  public init(r: number): void {
+  #init(r: number): void {
     const FACES = 5;
     // Ratios chosen so opposite faces are parallel and the die sits flat.
     const APEX_RATIO = 0.9;

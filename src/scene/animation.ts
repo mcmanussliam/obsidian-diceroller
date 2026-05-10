@@ -1,15 +1,13 @@
 import * as CANNON from 'cannon-es';
-import type { DieObject } from '@/lib/overlay/dice-factory';
-import type { PhysicsWorld } from '@/lib/overlay/physics-world';
-import type { Renderer } from '@/lib/overlay/renderer';
+import type { DieObject } from '@/dice/factory';
+import type { PhysicsWorld } from '@/scene/physics';
+import type { Renderer } from '@/scene/renderer';
 
-enum Magics {
-  FIXED_STEP = 1 / 60,
-
-  SETTLE_CONFIRM_TIME = 0.7,
-
-  DELTA_CAP = 0.1,
-}
+const Magics = {
+  FIXED_STEP: 1 / 60,
+  SETTLE_CONFIRM_TIME: 0.7,
+  DELTA_CAP: 0.1,
+} as const;
 
 export class AnimationController {
   readonly #physics: PhysicsWorld;

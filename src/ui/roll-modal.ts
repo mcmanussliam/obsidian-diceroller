@@ -1,5 +1,5 @@
 import { type App, Modal, Setting } from 'obsidian';
-import { validateNotation } from '@/lib/parser/dice-parser';
+import { validateNotation } from '@/dice/parser';
 
 const QUICK_PICKS = ['1d4', '1d6', '1d8', '1d10', '1d12', '1d20', '1d100'] as const;
 const FOCUS_DELAY_MS = 50;
@@ -20,7 +20,7 @@ export class RollModal extends Modal {
     const { contentEl } = this;
     contentEl.addClass('dice-roller-modal');
 
-    contentEl.createEl('h2', { text: 'Roll Dice' });
+    contentEl.createEl('h2', { text: 'Roll dice' });
     contentEl.createEl('p', {
       text: 'Enter dice notation: 1d20, 2d6+3, 4d6kh3, …',
       cls: 'dice-roller-modal__hint',
@@ -28,7 +28,7 @@ export class RollModal extends Modal {
 
     new Setting(contentEl).setName('Notation').addText((text) => {
       text
-        .setPlaceholder('e.g. 2d6+3')
+        .setPlaceholder('2d6+3')
         .setValue(this.#notation)
         .onChange((value) => {
           this.#notation = value.trim();

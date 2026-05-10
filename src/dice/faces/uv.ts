@@ -2,11 +2,16 @@ import * as THREE from 'three';
 
 export interface FaceData {
   readonly faceNormals: readonly THREE.Vector3[];
+
   readonly faceGroups: readonly (readonly number[])[];
+
   readonly faceCentroids: readonly { cx: number; cy: number }[];
+
   readonly faceVertexPixels: readonly (readonly { cx: number; cy: number }[])[];
+
   /** Parallel to faceVertexPixels: global vertex ID for each corner of each face. */
   readonly faceVertexIds: readonly (readonly number[])[];
+
   /** One entry per unique 3-D vertex position across the whole geometry. */
   readonly globalVertexPositions: readonly THREE.Vector3[];
 }
@@ -50,8 +55,8 @@ export function buildFaceUVs(geo: THREE.BufferGeometry): {
       normal.negate();
     }
 
-    const matchIdx = faceGroups.findIndex((_, g) =>
-      faceNormalSum[g].clone().normalize().dot(normal) > 0.99
+    const matchIdx = faceGroups.findIndex(
+      (_, g) => faceNormalSum[g].clone().normalize().dot(normal) > 0.99
     );
 
     if (matchIdx !== -1) {

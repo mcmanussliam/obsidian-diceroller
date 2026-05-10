@@ -1,5 +1,5 @@
 import type * as THREE from 'three';
-import type { DieSides } from '@/lib/parser/dice-parser';
+import type { DieSides } from '@/dice/parser';
 
 const OPPOSITE_SUMS: Partial<Record<DieSides, number>> = {
   6: 7,
@@ -67,16 +67,16 @@ export function buildD4VertexMap(
   return map;
 }
 
-/**
- * Converts a face label string back to a numeric result value.
- */
+/** Converts a face label string back to a numeric result value. */
 export function labelToResult(label: string, sides: DieSides): number {
   if (sides === 10) {
     return label === '0' ? 10 : Number.parseInt(label, 10);
   }
+
   if (sides === 100) {
     return label === '00' ? 100 : Number.parseInt(label, 10);
   }
+
   return Number.parseInt(label, 10);
 }
 
@@ -106,6 +106,7 @@ function assignByYThenAzimuth(
       if (Math.abs(dy) > 0.01) {
         return dy;
       }
+
       return (
         Math.atan2(faceNormals[a].z, faceNormals[a].x) -
         Math.atan2(faceNormals[b].z, faceNormals[b].x)
@@ -137,6 +138,7 @@ function assignOpposites(faceNormals: readonly THREE.Vector3[], oppositeSum: num
       if (paired[j]) {
         continue;
       }
+
       const dot = faceNormals[i].dot(faceNormals[j]);
       if (dot < bestDot) {
         bestDot = dot;
@@ -156,8 +158,10 @@ function assignOpposites(faceNormals: readonly THREE.Vector3[], oppositeSum: num
     if (Math.abs(maxYA - maxYB) > 0.01) {
       return maxYB - maxYA;
     }
+
     const upperA = faceNormals[pa[0]].y >= faceNormals[pa[1]].y ? pa[0] : pa[1];
     const upperB = faceNormals[pb[0]].y >= faceNormals[pb[1]].y ? pb[0] : pb[1];
+
     return (
       Math.atan2(faceNormals[upperA].z, faceNormals[upperA].x) -
       Math.atan2(faceNormals[upperB].z, faceNormals[upperB].x)
@@ -168,6 +172,7 @@ function assignOpposites(faceNormals: readonly THREE.Vector3[], oppositeSum: num
     const [a, b] = pairs[rank];
     const lo = rank + 1;
     const hi = oppositeSum - lo;
+
     if (faceNormals[a].y >= faceNormals[b].y) {
       labels[a] = String(lo);
       labels[b] = String(hi);

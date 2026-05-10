@@ -1,21 +1,14 @@
 import * as CANNON from 'cannon-es';
 
-enum Magics {
-  // World setup
-  GRAVITY = -28,
-
-  // Solver, higher iterations = more accurate stacking at a CPU cost
-  SOLVER_ITERATIONS = 12,
-  SOLVER_SUBSTEPS = 5,
-
-  // Ground/dice contact, controls bounce and slide feel
-  GROUND_FRICTION = 0.55,
-  GROUND_RESTITUTION = 0.38,
-
-  // Dice/dice contact, gentler bounce when dice hit each other
-  DICE_FRICTION = 0.4,
-  DICE_RESTITUTION = 0.3,
-}
+const Magics = {
+  GRAVITY: -28,
+  SOLVER_ITERATIONS: 12,
+  SOLVER_SUBSTEPS: 5,
+  GROUND_FRICTION: 0.55,
+  GROUND_RESTITUTION: 0.38,
+  DICE_FRICTION: 0.4,
+  DICE_RESTITUTION: 0.3,
+} as const;
 
 export interface GroundBounds {
   readonly minX: number;
@@ -25,32 +18,32 @@ export interface GroundBounds {
 }
 
 export class PhysicsWorld {
-  readonly world: CANNON.World;
+  readonly #world: CANNON.World;
 
   readonly #groundMaterial: CANNON.Material;
 
   readonly #diceMaterial: CANNON.Material;
 
   public constructor(bounds: GroundBounds) {
-    this.world = new CANNON.World({
+    this.#world = new CANNON.World({
       gravity: new CANNON.Vec3(0, Magics.GRAVITY, 0),
     });
 
-    this.world.broadphase = new CANNON.NaiveBroadphase();
-    (this.world.solver as CANNON.GSSolver).iterations = Magics.SOLVER_ITERATIONS;
-    this.world.allowSleep = true;
+    this.#world.broadphase = new CANNON.NaiveBroadphase();
+    (this.#world.solver as CANNON.GSSolver).iterations = Magics.SOLVER_ITERATIONS;
+    this.#world.allowSleep = true;
 
     this.#groundMaterial = new CANNON.Material('ground');
     this.#diceMaterial = new CANNON.Material('dice');
 
-    this.world.addContactMaterial(
+    this.#world.addContactMaterial(
       new CANNON.ContactMaterial(this.#groundMaterial, this.#diceMaterial, {
         friction: Magics.GROUND_FRICTION,
         restitution: Magics.GROUND_RESTITUTION,
       })
     );
 
-    this.world.addContactMaterial(
+    this.#world.addContactMaterial(
       new CANNON.ContactMaterial(this.#diceMaterial, this.#diceMaterial, {
         friction: Magics.DICE_FRICTION,
         restitution: Magics.DICE_RESTITUTION,
@@ -66,15 +59,15 @@ export class PhysicsWorld {
   }
 
   public step(fixedStep: number, deltaTime: number): void {
-    this.world.step(fixedStep, deltaTime, Magics.SOLVER_SUBSTEPS);
+    this.#world.step(fixedStep, deltaTime, Magics.SOLVER_SUBSTEPS);
   }
 
   public addBody(body: CANNON.Body): void {
-    this.world.addBody(body);
+    this.#world.addBody(body);
   }
 
   public removeBody(body: CANNON.Body): void {
-    this.world.removeBody(body);
+    this.#world.removeBody(body);
   }
 
   public dispose(): void {
@@ -85,7 +78,7 @@ export class PhysicsWorld {
     const ground = new CANNON.Body({ mass: 0, material: this.#groundMaterial });
     ground.addShape(new CANNON.Plane());
     ground.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
-    this.world.addBody(ground);
+    this.#world.addBody(ground);
   }
 
   #addWalls(bounds: GroundBounds): void {
@@ -105,7 +98,7 @@ export class PhysicsWorld {
       wall.addShape(new CANNON.Plane());
       wall.position.copy(pos);
       wall.quaternion.setFromEuler(...euler);
-      this.world.addBody(wall);
+      this.#world.addBody(wall);
     }
   }
 }
