@@ -20,7 +20,7 @@ export function geomToConvex(geometry: THREE.BufferGeometry): CANNON.ConvexPolyh
     const key = `${x.toFixed(5)},${y.toFixed(5)},${z.toFixed(5)}`;
 
     const existing = seen.get(key);
-    if (existing) {
+    if (existing !== undefined) {
       return existing;
     }
 

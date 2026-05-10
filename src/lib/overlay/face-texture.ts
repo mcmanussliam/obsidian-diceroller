@@ -1,14 +1,16 @@
 import * as THREE from 'three';
 import type { DieSides } from '@/lib/parser/dice-parser';
-
-const CELL_SIZE = 256;
+import { hexToRGBString, autoContrast } from '@/utils/color';
+import { CELL_SIZE } from '@/lib/overlay/face-uv';
 
 /**
  * Draws all face labels into a canvas texture atlas — one cell per face.
  * The cell layout matches the UV atlas written by buildFaceUVs.
  *
- * For d4, draws 3 smaller labels at face corner positions (nudged toward the
- * centroid) so numbers sit inside each triangular face.
+ * For d4, draws a different number at each corner: the number of the vertex at
+ * that corner (which equals the number of the face opposite to that corner),
+ * matching real physical d4 dice.  Requires d4VertexMap and faceVertexIds.
+ *
  * For all other dice, draws the label at the geometric centroid of each face.
  */
 export function generateFaceTexture(
@@ -16,7 +18,10 @@ export function generateFaceTexture(
   faceColor: number,
   faceCentroids: readonly { cx: number; cy: number }[],
   faceVertexPixels: readonly (readonly { cx: number; cy: number }[])[],
-  sides: DieSides
+  faceVertexIds: readonly (readonly number[])[],
+  sides: DieSides,
+  font: string,
+  d4VertexMap?: Map<number, number>
 ): THREE.CanvasTexture {
   const n = faceLabels.length;
   const cols = Math.ceil(Math.sqrt(n));
@@ -30,11 +35,10 @@ export function generateFaceTexture(
     throw new Error('Could not get 2d canvas context');
   }
 
-  const bgCSS = hexToCSS(faceColor);
+  const bgCSS = hexToRGBString(faceColor);
   const textColor = autoContrast(faceColor);
 
-  for (let i = 0; i < faceLabels.length; i++) {
-    const label = faceLabels[i];
+  for (const [i] of faceLabels.entries()) {
     const x = (i % cols) * CELL_SIZE;
     const y = Math.floor(i / cols) * CELL_SIZE;
 
@@ -45,19 +49,27 @@ export function generateFaceTexture(
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    if (sides === 4) {
-      const cornerFontSize = Math.round(CELL_SIZE * 0.28);
-      ctx.font = `bold ${cornerFontSize}px Georgia, serif`;
+    if (sides === 4 && d4VertexMap) {
+      // Each corner shows the number of the vertex at that corner (= opposite face number).
+      const cornerFontSize = Math.round(CELL_SIZE * 0.2);
+      ctx.font = `bold ${cornerFontSize}px ${font}`;
       const centroid = faceCentroids[i];
-      for (const corner of faceVertexPixels[i]) {
-        const cx = corner.cx + (centroid.cx - corner.cx) * 0.25;
-        const cy = corner.cy + (centroid.cy - corner.cy) * 0.25;
-        ctx.fillText(label, x + cx, y + cy);
+      const corners = faceVertexPixels[i];
+      const vertexIds = faceVertexIds[i];
+
+      for (let c = 0; c < corners.length; c++) {
+        const corner = corners[c];
+        const num = d4VertexMap.get(vertexIds[c]) ?? '';
+        // Nudge 35% toward centroid so the number sits inside the triangle.
+        const cx = corner.cx + (centroid.cx - corner.cx) * 0.35;
+        const cy = corner.cy + (centroid.cy - corner.cy) * 0.35;
+        ctx.fillText(String(num), x + cx, y + cy);
       }
     } else {
+      const label = faceLabels[i];
       const fontSize =
         label.length > 1 ? Math.round(CELL_SIZE * 0.36) : Math.round(CELL_SIZE * 0.44);
-      ctx.font = `bold ${fontSize}px Georgia, serif`;
+      ctx.font = `bold ${fontSize}px ${font}`;
       ctx.fillText(label, x + faceCentroids[i].cx, y + faceCentroids[i].cy);
     }
   }
@@ -65,19 +77,4 @@ export function generateFaceTexture(
   const texture = new THREE.CanvasTexture(canvas);
   texture.needsUpdate = true;
   return texture;
-}
-
-function hexToCSS(hex: number): string {
-  const r = (hex >> 16) & 0xff;
-  const g = (hex >> 8) & 0xff;
-  const b = hex & 0xff;
-  return `rgb(${r},${g},${b})`;
-}
-
-function autoContrast(hex: number): string {
-  const r = (hex >> 16) & 0xff;
-  const g = (hex >> 8) & 0xff;
-  const b = hex & 0xff;
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.5 ? '#1a1a1a' : '#f4f4f0';
 }

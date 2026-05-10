@@ -8,9 +8,12 @@ export class DecagonGeometry extends THREE.BufferGeometry {
 
   public init(r: number): void {
     const FACES = 5;
+    // Ratios chosen so opposite faces are parallel and the die sits flat.
+    const APEX_RATIO = 0.9;
+    const RING_RATIO = 0.82;
 
-    const APEX_Y = r * 0.9;
-    const RING_R = r * 0.82;
+    const APEX_Y = r * APEX_RATIO;
+    const RING_R = r * RING_RATIO;
 
     const c = Math.cos(Math.PI / FACES);
     const RING_Y = APEX_Y * ((1 - c) / (1 + c));

@@ -43,6 +43,31 @@ export function assignFaceNumbers(
 }
 
 /**
+ * For d4: returns a map from global vertex ID to the number shown at that vertex.
+ *
+ * On a physical d4 the number at each corner equals the number of the face
+ * opposite to that corner.  faceLabels[f] must already be set (call
+ * assignFaceNumbers first).
+ */
+export function buildD4VertexMap(
+  faceLabels: readonly string[],
+  faceVertexIds: readonly (readonly number[])[]
+): Map<number, number> {
+  const map = new Map<number, number>();
+  const allIds = new Set(faceVertexIds.flat());
+
+  for (const vId of allIds) {
+    // The face that does NOT contain this vertex is the opposite face.
+    const oppFaceIdx = faceVertexIds.findIndex((corners) => !corners.includes(vId));
+    if (oppFaceIdx !== -1) {
+      map.set(vId, Number.parseInt(faceLabels[oppFaceIdx], 10));
+    }
+  }
+
+  return map;
+}
+
+/**
  * Converts a face label string back to a numeric result value.
  */
 export function labelToResult(label: string, sides: DieSides): number {

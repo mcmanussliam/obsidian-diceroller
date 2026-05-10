@@ -31,6 +31,7 @@ export default class DiceRollerPlugin extends Plugin {
 
   public async saveSettings(): Promise<void> {
     await this.saveData(this.settings);
+    this.overlay.destroy();
     this.overlay = new DiceOverlay(this.settings);
   }
 }

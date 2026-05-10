@@ -6,8 +6,9 @@ import { geomToConvex } from '@/utils/three-utils';
 import { DecagonGeometry } from '@/lib/geometry/decagon-geometry';
 import type { GroundBounds } from '@/lib/overlay/physics-world';
 import { buildFaceUVs, applyUVArray, type FaceData } from '@/lib/overlay/face-uv';
-import { assignFaceNumbers, labelToResult } from '@/lib/overlay/face-numbers';
+import { assignFaceNumbers, buildD4VertexMap, labelToResult } from '@/lib/overlay/face-numbers';
 import { generateFaceTexture } from '@/lib/overlay/face-texture';
+import { DEFAULT_THEME, type DieTheme } from '@/lib/theme/die-theme';
 
 enum Magics {
   DIE_RADIUS = 0.85,
@@ -43,16 +44,6 @@ export interface DieObject {
   readonly readResult: (mesh: THREE.Mesh) => number;
 }
 
-export const DIE_COLORS: Record<DieSides, number> = {
-  4: 0xcc2222,
-  6: 0xf5f0e8,
-  8: 0x2266cc,
-  10: 0x8833bb,
-  12: 0x229955,
-  20: 0xeef0ff,
-  100: 0xcc7722,
-};
-
 interface FaceInfo {
   faceData: FaceData;
   faceLabels: string[];
@@ -65,10 +56,16 @@ export class DiceFactory {
   readonly #physicsGeoCache = new Map<DieSides, THREE.BufferGeometry>();
   readonly #faceInfoCache = new Map<DieSides, FaceInfo>();
   readonly #bounds: GroundBounds;
+  readonly #theme: DieTheme;
 
-  public constructor(physicsMaterial: CANNON.Material, bounds: GroundBounds) {
+  public constructor(
+    physicsMaterial: CANNON.Material,
+    bounds: GroundBounds,
+    theme: DieTheme = DEFAULT_THEME
+  ) {
     this.#physicsMaterial = physicsMaterial;
     this.#bounds = bounds;
+    this.#theme = theme;
   }
 
   public createDie(sides: DieSides): DieObject {
@@ -81,6 +78,11 @@ export class DiceFactory {
     const { faceLabels, faceData } = faceInfo;
     const isD4 = s === 4;
 
+    /**
+     * Reads the rolled value by finding the face whose world-space normal
+     * points most directly upward after the mesh has settled.
+     * d4 is inverted — the result is on the bottom face (lowest Y normal).
+     */
     const readResult = (m: THREE.Mesh): number => {
       const { faceNormals } = faceData;
       let bestIdx = 0;
@@ -97,14 +99,7 @@ export class DiceFactory {
       return labelToResult(faceLabels[bestIdx], s);
     };
 
-    return {
-      mesh,
-      body,
-      sides: s,
-      faceData,
-      faceLabels,
-      readResult,
-    };
+    return { mesh, body, sides: s, faceData, faceLabels, readResult };
   }
 
   public dispose(): void {
@@ -131,12 +126,17 @@ export class DiceFactory {
     tempGeo.dispose();
 
     const faceLabels = assignFaceNumbers(sides, faceData.faceNormals);
+    const d4VertexMap =
+      sides === 4 ? buildD4VertexMap(faceLabels, faceData.faceVertexIds) : undefined;
     const texture = generateFaceTexture(
       faceLabels,
-      DIE_COLORS[sides],
+      this.#theme.colors[sides],
       faceData.faceCentroids,
       faceData.faceVertexPixels,
-      sides
+      faceData.faceVertexIds,
+      sides,
+      this.#theme.font,
+      d4VertexMap
     );
 
     const info: FaceInfo = { faceData, faceLabels, uvArray, texture };
@@ -145,7 +145,7 @@ export class DiceFactory {
   }
 
   #buildMesh(sides: DieSides, physicsGeo: THREE.BufferGeometry, faceInfo: FaceInfo): THREE.Mesh {
-    const color = DIE_COLORS[sides];
+    const color = this.#theme.colors[sides];
     const edgeColor = isDark(color) ? 0xffffff : 0x000000;
 
     const visualGeo = physicsGeo.toNonIndexed();
