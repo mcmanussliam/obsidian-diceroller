@@ -6,7 +6,6 @@ enum Magics {
   CAMERA_NEAR = 0.1,
   CAMERA_FAR = 100,
   CAMERA_POS_Y = 20,
-  CAMERA_POS_Z = 2,
 
   MAX_PIXEL_RATIO = 2,
   TONE_MAPPING_EXPOSURE = 1.2,
@@ -53,7 +52,8 @@ export class Renderer {
       Magics.CAMERA_NEAR,
       Magics.CAMERA_FAR
     );
-    this.camera.position.set(0, Magics.CAMERA_POS_Y, Magics.CAMERA_POS_Z);
+    this.camera.position.set(0, Magics.CAMERA_POS_Y, 0);
+    this.camera.up.set(0, 0, -1);
     this.camera.lookAt(0, 0, 0);
     this.camera.updateMatrixWorld();
 
