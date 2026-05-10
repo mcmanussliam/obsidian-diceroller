@@ -9,11 +9,18 @@ export class RollModal extends Modal {
 
   readonly #onRoll: (notation: string) => void;
 
+  readonly #resolve: (raw: string) => string;
+
   #errorEl: HTMLElement | null = null;
 
-  public constructor(app: App, onRoll: (notation: string) => void) {
+  public constructor(
+    app: App,
+    onRoll: (notation: string) => void,
+    resolveNotation?: (raw: string) => string
+  ) {
     super(app);
     this.#onRoll = onRoll;
+    this.#resolve = resolveNotation ?? ((s) => s);
   }
 
   public onOpen(): void {
@@ -22,7 +29,8 @@ export class RollModal extends Modal {
 
     contentEl.createEl('h2', { text: 'Roll dice' });
     contentEl.createEl('p', {
-      text: 'Enter dice notation: 1d20, 2d6+3, 4d6kh3, …',
+      // eslint-disable-next-line obsidianmd/ui/sentence-case
+      text: 'Enter dice notation: 2d6+3, 1d20+STR, 4d6kh3',
       cls: 'dice-roller-modal__hint',
     });
 
@@ -77,13 +85,15 @@ export class RollModal extends Modal {
       return;
     }
 
-    if (!validateNotation(this.#notation)) {
+    const resolved = this.#resolve(this.#notation);
+
+    if (!validateNotation(resolved)) {
       this.#showError(`"${this.#notation}" is not valid dice notation.`);
       return;
     }
 
     this.close();
-    this.#onRoll(this.#notation);
+    this.#onRoll(resolved);
   }
 
   #showError(msg: string): void {

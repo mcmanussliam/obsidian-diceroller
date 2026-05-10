@@ -61,6 +61,26 @@ export function extractGroups(notation: string): DiceGroup[] {
   return groups;
 }
 
+export function resolveVariables(notation: string, vars: Record<string, unknown>): string {
+  return notation.replace(/\b[A-Za-z_][A-Za-z0-9_]*\b/g, (token) => {
+    const lower = token.toLowerCase();
+    let val: unknown = undefined;
+
+    if (token in vars) {
+      val = vars[token];
+    } else {
+      for (const [key, v] of Object.entries(vars)) {
+        if (key.toLowerCase() === lower) {
+          val = v;
+          break;
+        }
+      }
+    }
+
+    return typeof val === 'number' && Number.isFinite(val) ? String(val) : token;
+  });
+}
+
 export function validateNotation(notation: string): boolean {
   try {
     new DiceRoll(notation);
