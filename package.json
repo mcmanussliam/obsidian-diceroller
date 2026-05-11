@@ -1,7 +1,7 @@
 {
   "name": "obsidian-diceroller",
   "version": "1.0.0",
-  "description": "3D Dice Roller overlay plugin for Obsidian",
+  "description": "Dice Roller overlay plugin for Obsidian",
   "main": "main.js",
   "scripts": {
     "dev": "vite build --watch",
