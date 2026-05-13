@@ -7,7 +7,9 @@
     "dev": "vite build --watch",
     "build": "vite build",
     "lint": "eslint . && tsc --noEmit",
-    "format": "prettier --write ./src"
+    "format": "prettier --write ./src",
+    "changelog": "./scripts/changelog.js",
+    "version": "./scripts/version-bump.js && git add ."
   },
   "dependencies": {
     "cannon-es": "0.9.1",
