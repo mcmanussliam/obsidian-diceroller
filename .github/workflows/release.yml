@@ -17,42 +17,56 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
       - name: install pnpm
-        uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d # v6.0.5
+        uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d
         with:
           version: 11
 
-      - name: use node.js ${{ matrix.node-version }}
+      - name: use node.js
         uses: actions/setup-node@v6
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: "pnpm"
+          node-version: 24
+          cache: pnpm
 
-      - name: build
-        run: |
-          pnpm install
-          pnpm build
+      - name: install deps
+        run: pnpm install --frozen-lockfile
 
-      - name: Generate release notes
+      - name: build plugin
+        run: pnpm build
+
+      - name: generate release notes
         env:
           TAG_NAME: ${{ github.ref_name }}
-        run: ./scripts/changelog.sh "$TAG_NAME" "$TAG_NAME" > release-notes.md
+        run: |
+          previous_tag="$(git describe --tags --abbrev=0 "$TAG_NAME^" 2>/dev/null || true)"
 
-      - name: zip
+          if [ -n "$previous_tag" ]; then
+            ./scripts/changelog.js "$previous_tag" "$TAG_NAME" > release-notes.md
+          else
+            ./scripts/changelog.js "$(git rev-list --max-parents=0 HEAD)" "$TAG_NAME" > release-notes.md
+          fi
+
+      - name: zip plugin
         run: |
           tag="${GITHUB_REF#refs/tags/}"
-          mkdir ${{env.PLUGIN_NAME}}
-          cp dist/main.js dist/manifest.json dist/styles.css ${{env.PLUGIN_NAME}}
-          zip -r obsidian-${{env.PLUGIN_NAME}}-"$tag".zip ${{env.PLUGIN_NAME}}
+          mkdir "${{ env.PLUGIN_NAME }}"
+          cp dist/main.js dist/manifest.json dist/styles.css "${{ env.PLUGIN_NAME }}"
+          zip -r "obsidian-${{ env.PLUGIN_NAME }}-$tag.zip" "${{ env.PLUGIN_NAME }}"
 
-      - name: release
+      - name: create draft release
         env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           tag="${GITHUB_REF#refs/tags/}"
 
           gh release create "$tag" \
-            --title="$tag" \
+            --title "$tag" \
             --draft \
             --notes-file release-notes.md \
-            dist/main.js dist/manifest.json dist/styles.css obsidian-${{env.PLUGIN_NAME}}-"$tag".zip
+            dist/main.js \
+            dist/manifest.json \
+            dist/styles.css \
+            "obsidian-${{ env.PLUGIN_NAME }}-$tag.zip

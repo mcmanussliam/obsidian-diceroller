@@ -18,19 +18,20 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+
       - name: install pnpm
-        uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d # v6.0.5
+        uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d
         with:
           version: 11
 
-      - name: use node.js ${{ matrix.node-version }}
+      - name: use node.js
         uses: actions/setup-node@v6
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: "pnpm"
+          node-version: 24
+          cache: pnpm
 
       - name: install deps
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: lint code
         run: pnpm lint
