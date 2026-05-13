@@ -35,5 +35,5 @@ export default tseslint.config(
       'lines-between-class-members': ['error', 'always'],
     },
   },
-  globalIgnores(['node_modules', 'dist'])
+  globalIgnores(['node_modules', 'dist', 'scripts'])
 );
