@@ -16,8 +16,8 @@
 
 - **Real physics simulation**, dice tumble, collide, and settle naturally.
 - **Advanced dice notation**, powered by [`rpg-dice-roller`](https://github.com/dice-roller/rpg-dice-roller).
-- **Frontmatter variables**, use YAML values directly in rolls
-- **Custom dice skins**, drop in your own GLB models and PBR textures
+- **Frontmatter variables**, use YAML values directly in rolls.
+- **Custom dice skins**, drop in your own GLB models, PBR textures, and sounds.
 
 ## Quick Start
 
@@ -31,7 +31,12 @@ After BRAT is enabled:
 4. Install it
 5. And that's it 🎉
 
+## Docs
+
+- [User guide](docs/usage.md)
+- [Frontmatter variables](docs/frontmatter-variables.md)
+- [Custom dice skins](docs/custom-dice-skins.md)
+
 <p align="center">
   Built for TTRPG players, worldbuilders, and dungeon masters.
 </p>
-
