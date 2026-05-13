@@ -16,17 +16,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-
-      - name: setup node
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v6
+      - name: install pnpm
+        uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d # v6.0.5
         with:
-          node-version: "18.x"
+          version: 11
+
+      - name: use node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "pnpm"
 
       - name: build
         run: |
-          npm ci
-          npm run build
+          pnpm install
+          pnpm build
+
+      - name: Generate release notes
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: ./scripts/changelog.sh "$TAG_NAME" "$TAG_NAME" > release-notes.md
 
       - name: zip
         run: |
@@ -44,4 +54,5 @@ jobs:
           gh release create "$tag" \
             --title="$tag" \
             --draft \
+            --notes-file release-notes.md \
             dist/main.js dist/manifest.json dist/styles.css obsidian-${{env.PLUGIN_NAME}}-"$tag".zip
