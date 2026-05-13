@@ -8,6 +8,7 @@
     "build": "vite build",
     "lint": "eslint . && tsc --noEmit",
     "format": "prettier --write ./src",
+    "format:check": "prettier --check ./src",
     "changelog": "./scripts/changelog.js",
     "version": "./scripts/version-bump.js && git add ."
   },

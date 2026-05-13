@@ -33,6 +33,9 @@ jobs:
       - name: install deps
         run: pnpm install --frozen-lockfile
 
+      - name: check formatting
+        run: pnpm format:check
+
       - name: lint code
         run: pnpm lint
 
