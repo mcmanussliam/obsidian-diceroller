@@ -21,18 +21,17 @@
 
 ## Quick Start
 
-1. Open **Settings > Community Plugins > Browse**
-2. Search for **Obsidian Dice Roller**
-3. Install & enable
-4. And that's it 🎉
+Since this plugin isn't officially released in the Community Plugins store yet, the easiest way to install it is with [Obsidian BRAT](https://community.obsidian.md/plugins/obsidian42-brat), which lets you install plugins directly from GitHub.
 
-## Docs
+After BRAT is enabled:
 
-- [Getting Started](https://yourdocs.dev/getting-started)
-- [Dice Syntax](https://yourdocs.dev/dice-syntax)
-- [Custom Dice Skins](https://yourdocs.dev/skins)
-- [Configuration](https://yourdocs.dev/config)
+1. Open Settings
+2. Go to BRAT
+3. Click Add Beta Plugin, you'll be asked for the plugin's GitHub repository URL. (https://github.com/mcmanussliam/obsidian-diceroller)
+4. Install it
+5. And that's it 🎉
 
 <p align="center">
   Built for TTRPG players, worldbuilders, and dungeon masters.
 </p>
+
