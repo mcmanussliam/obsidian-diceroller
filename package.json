@@ -1,6 +1,6 @@
 {
   "name": "obsidian-diceroller",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Dice Roller overlay plugin for Obsidian",
   "main": "main.js",
   "scripts": {
