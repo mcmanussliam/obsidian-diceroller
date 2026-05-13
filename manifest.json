@@ -1,7 +1,7 @@
 {
 	"id": "obsidian-diceroller",
 	"name": "Obsidian Dice Roller",
-	"version": "1.1.1",
+	"version": "1.2.0",
 	"minAppVersion": "0.15.0",
 	"description": "Roll dice directly inside your notes.",
 	"author": "liam",
