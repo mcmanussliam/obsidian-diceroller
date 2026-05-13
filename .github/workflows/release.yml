@@ -69,4 +69,4 @@ jobs:
             dist/main.js \
             dist/manifest.json \
             dist/styles.css \
-            "obsidian-${{ env.PLUGIN_NAME }}-$tag.zip
+            "obsidian-${{ env.PLUGIN_NAME }}-$tag.zip"
