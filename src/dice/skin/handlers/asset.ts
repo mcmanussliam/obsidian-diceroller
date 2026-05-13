@@ -82,8 +82,7 @@ export class AssetSkinHandler implements DiceSkinHandler {
         if (!filename || this.#textures.has(filename)) return;
         const buffer = await this.#resolver.resolve(filename);
         const texture = await this.#textureFromBuffer(buffer);
-        texture.colorSpace =
-          key === 'albedo' ? THREE.SRGBColorSpace : THREE.LinearSRGBColorSpace;
+        texture.colorSpace = key === 'albedo' ? THREE.SRGBColorSpace : THREE.LinearSRGBColorSpace;
         this.#textures.set(filename, texture);
       })
     );
@@ -170,14 +169,19 @@ export class AssetSkinHandler implements DiceSkinHandler {
         return;
       }
 
-      child.geometry.computeBoundingSphere();
-      const sphere = child.geometry.boundingSphere;
+      const mesh = child as THREE.Mesh<THREE.BufferGeometry>;
+      const { geometry } = mesh;
+      geometry.computeBoundingSphere();
+      const sphere = geometry.boundingSphere;
       if (!sphere) {
         return;
       }
 
       child.matrixWorld.decompose(new THREE.Vector3(), new THREE.Quaternion(), worldScale);
-      maxRadius = Math.max(maxRadius, sphere.radius * Math.max(worldScale.x, worldScale.y, worldScale.z));
+      maxRadius = Math.max(
+        maxRadius,
+        sphere.radius * Math.max(worldScale.x, worldScale.y, worldScale.z)
+      );
     });
 
     physicsGeo.computeBoundingSphere();
